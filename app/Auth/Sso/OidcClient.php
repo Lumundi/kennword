@@ -199,7 +199,7 @@ final readonly class OidcClient
         try {
             $client->userInfo($accessToken);
         } catch (ApiError $error) {
-            throw ApiError::message("Failed to retrieve user info, token has probably been invalidated: {$error->getMessage()}");
+            throw ApiError::silent("Failed to retrieve user info, token has probably been invalidated: {$error->getMessage()}");
         }
     }
 

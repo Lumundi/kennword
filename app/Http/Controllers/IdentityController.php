@@ -446,7 +446,8 @@ final readonly class IdentityController
 
         $sso = new Sso($this->config, $this->jwt);
         [$auth, $infos] = $sso->exchangeCode($code, $codeVerifier);
-        $failed = static fn (string $message): ApiError => ApiError::message($message, event: Event::USER_FAILED_LOG_IN);
+        // err_silent!: the reason is logged above.
+        $failed = static fn (string $message): ApiError => ApiError::silent($message, event: Event::USER_FAILED_LOG_IN);
 
         $userWithSso = SsoUser::findByIdentifier($infos->identifier);
         if ($userWithSso === null) {

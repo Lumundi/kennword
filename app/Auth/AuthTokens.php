@@ -72,7 +72,7 @@ final readonly class AuthTokens
         } catch (Throwable $error) {
             logger()->error("Failed to decode refresh_token from {$ip}: {$error->getMessage()}");
 
-            throw ApiError::message('Invalid refresh token');
+            throw ApiError::silent('Invalid refresh token');
         }
 
         $device = Device::findByRefreshToken($deviceToken) ?? throw ApiError::message('Invalid refresh token');

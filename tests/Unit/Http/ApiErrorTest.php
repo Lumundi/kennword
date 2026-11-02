@@ -22,6 +22,10 @@ class ApiErrorTest extends TestCase
         $this->assertTrue($silent->silent);
         $this->assertTrue($silent->withStatus(404)->silent);
         $this->assertSame(ApiError::message('Your password hint is: secret')->displayText(), $silent->displayText());
+
+        // err_silent!(message, ErrorEvent { .. }) keeps its event.
+        $failed = ApiError::silent('Existing SSO user with same email', event: 1005);
+        $this->assertSame([true, 1005], [$failed->silent, $failed->event]);
     }
 
     public function test_the_user_message_of_other_kinds(): void

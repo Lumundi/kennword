@@ -210,7 +210,7 @@ final readonly class Sso
         if (is_array($token) && is_string($token['Access'] ?? null)) {
             $now = Dates::now()->getTimestamp();
             if ($exp < $now + self::BW_EXPIRATION) {
-                throw ApiError::message('Access token is close to expiration but we have no refresh token');
+                throw ApiError::silent('Access token is close to expiration but we have no refresh token');
             }
             OidcClient::checkValidity($this->config, $token['Access']);
 
