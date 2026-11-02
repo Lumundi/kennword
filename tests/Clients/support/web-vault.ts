@@ -92,14 +92,14 @@ export async function logOut(page: Page, account: Account): Promise<void> {
 }
 
 export async function expectVault(page: Page): Promise<void> {
-    // The vault's "New" button, once the onboarding is out of the way.
-    await page.getByRole('main').getByRole('button', { name: 'New', exact: true }).hover();
+    // The vault's "Add" button ("New" before web vault 2026.10), once the onboarding is out of the way.
+    await page.getByRole('main').getByRole('button', { name: 'Add', exact: true }).hover();
     await expect(page.getByRole('heading', { name: 'All vaults', level: 1 })).toBeVisible();
 }
 
 /** Opens the form of a new item ("Login", "Card", "Note", ...) or folder. */
 export async function newItem(page: Page, type: string): Promise<Locator> {
-    await page.getByRole('main').getByRole('button', { name: 'New', exact: true }).click();
+    await page.getByRole('main').getByRole('button', { name: 'Add', exact: true }).click();
     await page.getByRole('menuitem', { name: type, exact: true }).click();
 
     return page.getByRole('dialog');
