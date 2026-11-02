@@ -299,7 +299,7 @@ jobs:
           key: web-vault-${{ steps.pin.outputs.web-vault }}
 
       - name: Install the web vault
-        run: php artisan vaultwarden:web-vault
+        run: php artisan kennword:web-vault
 
       - name: Install the clients
         working-directory: tests/Clients

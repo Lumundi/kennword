@@ -19,7 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 $path = app(Config::class)->string('domain_path');
             } catch (ConfigException $exception) {
                 // Commands still run with settings Vaultwarden would refuse, without the routes
-                // (vaultwarden:check reports them); those that need the settings fail when they read them.
+                // (kennword:check reports them); those that need the settings fail when they read them.
                 if (app()->runningInConsole()) {
                     return;
                 }

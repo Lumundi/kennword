@@ -47,7 +47,7 @@ Composer package `lumundi/kennword`.
   (`support/mail.ts`) and an HTTPS proxy (`tests/Clients/proxy.mjs`), and a second one with SSO at the fake
   OpenID provider (`VW_CLIENTS_SSO_URL`); `clients.yml` runs it on every push, `reference.yml` against Vaultwarden.
   Run `npm ci --ignore-scripts` and `npx playwright install chromium` there first; `PHP=php86` picks Herd's PHP.
-- Live notifications: `php86 artisan vaultwarden:notifications` (`App\Notifications\Server`) serves the hubs of
+- Live notifications: `php86 artisan kennword:notifications` (`App\Notifications\Server`) serves the hubs of
   `src/api/notifications.rs` over WebSocket; upgrade requests go through the HTTP kernel to
   `NotificationsController`, which only accepts them inside the daemon. Handlers send updates with
   `App\Notifications\Notify` (Rust's `nt`), which hands them over a signed `Channel` (a Unix socket in the data
@@ -64,13 +64,13 @@ Composer package `lumundi/kennword`.
   the openidconnect and oauth2 crates (discovery, token requests, ID token checks in `Jws`).
 - Scheduled jobs: `App\Scheduler\Jobs` ports the jobs of `schedule_jobs` (src/main.rs), `JobScheduler`
   and `Job` port job_scheduler_ng, `App\Support\CronSchedule` the cron crate. `php86 artisan
-  vaultwarden:schedule` runs them (`--once` for cron), `vaultwarden:job <name>` runs one now.
+  kennword:schedule` runs them (`--once` for cron), `kennword:job <name>` runs one now.
 - Web vault: `WebController` serves `WEB_VAULT_FOLDER` like src/api/web.rs, its catch-all as Laravel's
   fallback route; `App\Support\WebVault` holds Rocket's path segment rules, NamedFile's content types and
   the web vault version that the `webver` helper compares. scssphp compiles `/css/vaultwarden.css`.
-  `php86 artisan vaultwarden:web-vault` installs the web vault from the Docker image Vaultwarden pins
+  `php86 artisan kennword:web-vault` installs the web vault from the Docker image Vaultwarden pins
   (`App\Support\WebVaultImage`, downloads through `App\Support\Downloader`, which tests fake);
-  `composer create-project` and `composer setup` run it after `key:generate` and `vaultwarden:migrate`.
+  `composer create-project` and `composer setup` run it after `key:generate` and `kennword:migrate`.
 - Release archives: `php86 artisan release:build [ref]` clones the ref, installs it without dev
   dependencies and with the web vault, drops `ReleaseBuild::LEFT_OUT` and writes reproducible tar.gz
   and zip archives (`App\Release\ArchiveWriter`) with a `.sha256` to `build/`, next to the web vault's
@@ -81,10 +81,10 @@ Composer package `lumundi/kennword`.
 - Uploads: Vaultwarden takes files up to 525 MB, so PHP needs `upload_max_filesize=525M` and a
   `post_max_size` above it (or `0`). PHP cuts uploaded file names at the last slash, which encrypted
   names contain; read them with `getClientOriginalPath()` (see `App\Http\Data\UploadData`).
-- Database schema: `php86 artisan vaultwarden:migrate`. It also converts old U2F and WebAuthn data,
+- Database schema: `php86 artisan kennword:migrate`. It also converts old U2F and WebAuthn data,
   which Vaultwarden does at every start.
 - Moving installations ([docs/migrating-from-vaultwarden.md](docs/migrating-from-vaultwarden.md)):
-  `php86 artisan vaultwarden:check` looks at an installation before it moves (settings, data folder,
+  `php86 artisan kennword:check` looks at an installation before it moves (settings, data folder,
   schema against `parity/schema`, rows we could not read). Its output may be shared, so it prints counts
   and names only, never values or paths; keep it that way. The migration test (`tests/Migration`,
   `.github/scripts/migration.sh <vaultwarden binary> sqlite|mysql|pgsql`) lets Vaultwarden fill an

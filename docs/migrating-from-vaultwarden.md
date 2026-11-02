@@ -2,7 +2,7 @@
 
 Kennword uses Vaultwarden's database, data folder and settings unchanged. An existing installation
 can therefore move over, and back again. Check a copy of your installation first: `php artisan
-vaultwarden:check` tells you what needs attention before you switch.
+kennword:check` tells you what needs attention before you switch.
 
 > [!NOTE]
 > Kennword covers Vaultwarden's features ([status](../README.md#status)). A few things work
@@ -31,7 +31,7 @@ Run the check on a copy of your data folder and database, with Vaultwarden's set
 switch:
 
 ```bash
-php artisan vaultwarden:check
+php artisan kennword:check
 ```
 
 It changes nothing. It looks at:
@@ -48,7 +48,7 @@ It changes nothing. It looks at:
   column by column;
 - **the rows:** how many users, ciphers, attachments and so on there are, ciphers of types the clients
   cannot sync, JSON columns that do not parse, timestamps Vaultwarden does not write (SQLite), files
-  of attachments and Sends that are missing, and old U2F and WebAuthn data, which `vaultwarden:migrate`
+  of attachments and Sends that are missing, and old U2F and WebAuthn data, which `kennword:migrate`
   converts.
 
 Each finding is either a **problem**, which you fix before moving (the command then exits with 1), or a
@@ -62,7 +62,7 @@ address, a name or a path.
 To check a database that is not the one in `DATABASE_URL`, name a connection of `config/database.php`:
 
 ```bash
-php artisan vaultwarden:check --database=mysql
+php artisan kennword:check --database=mysql
 ```
 
 ## Moving over
@@ -80,14 +80,14 @@ php artisan vaultwarden:check --database=mysql
 6. **Check the installation:**
 
    ```bash
-   php artisan vaultwarden:check
+   php artisan kennword:check
    ```
 
    Fix every problem it reports, and read the warnings.
 7. **Apply missing migrations:**
 
    ```bash
-   php artisan vaultwarden:migrate
+   php artisan kennword:migrate
    ```
 
    If your Vaultwarden was older than the version Kennword follows, this brings the schema up to
@@ -122,7 +122,7 @@ The CI moves an installation in both directions on SQLite, MySQL and PostgreSQL
    Sends with a password and with a file, devices, login requests, events, two-step login with an
    authenticator app, a security key, email and a recovery code, and settings saved in the admin
    panel.
-2. Vaultwarden stops; `vaultwarden:check` must find no problem, and `vaultwarden:migrate` runs.
+2. Vaultwarden stops; `kennword:check` must find no problem, and `kennword:migrate` runs.
 3. Kennword serves the same database and data folder. Everything the clients read (syncs, devices,
    two-factor methods, emergency access, login requests, the organization, its events and API key,
    attachments and their files, Sends, the admin panel) must be exactly what Vaultwarden answered, and

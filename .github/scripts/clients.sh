@@ -9,7 +9,7 @@
 # --serve starts the servers and keeps them running, for `npx playwright test`
 # by hand (with the environment it prints).
 #
-# Needs the web vault in WEB_VAULT_FOLDER (php artisan vaultwarden:web-vault) and
+# Needs the web vault in WEB_VAULT_FOLDER (php artisan kennword:web-vault) and
 # `npm ci` and `npx playwright install chromium` in tests/Clients. PHP is `php`
 # unless PHP names another; it also runs the SMTP sink, which keeps the mail the
 # servers send for the tests, and the OpenID provider. Ports 8100 to 8105, 8443
@@ -60,7 +60,7 @@ openssl x509 -req -in "${work}/server.csr" -CA "${work}/ca.pem" -CAkey "${work}/
 url=https://127.0.0.1:8443
 export DATA_FOLDER="${work}/data" DOMAIN="${url}" WEB_VAULT_FOLDER="$(realpath "${WEB_VAULT_FOLDER:-web-vault}")/"
 if [[ ! -f "${WEB_VAULT_FOLDER}index.html" ]]; then
-    echo "::error::No web vault in ${WEB_VAULT_FOLDER}; install it with php artisan vaultwarden:web-vault."
+    echo "::error::No web vault in ${WEB_VAULT_FOLDER}; install it with php artisan kennword:web-vault."
     exit 1
 fi
 
@@ -82,7 +82,7 @@ serve() {
         env "$@" ROCKET_ADDRESS=127.0.0.1 ROCKET_PORT="${port}" "${binary}" > "${work}/${name}.log" 2>&1 &
         pids+=($!)
     else
-        env "$@" "${php}" artisan vaultwarden:migrate --no-ansi > /dev/null
+        env "$@" "${php}" artisan kennword:migrate --no-ansi > /dev/null
         # php -S rather than artisan serve, which drops most environment variables. Laravel's router
         # script expects to run in the public folder. The web vault loads many files at once.
         (cd public && exec env "$@" PHP_CLI_SERVER_WORKERS=4 CACHE_PATH="${work}/${name}-cache" "${php}" -d upload_max_filesize=525M \
@@ -90,7 +90,7 @@ serve() {
             > "${work}/${name}.log" 2>&1 &
         pids+=($!)
         hub="http://127.0.0.1:$((port + 1))"
-        env "$@" "${php}" artisan vaultwarden:notifications --listen="${hub#http://}" --no-ansi > "${work}/${name}-notifications.log" 2>&1 &
+        env "$@" "${php}" artisan kennword:notifications --listen="${hub#http://}" --no-ansi > "${work}/${name}-notifications.log" 2>&1 &
         pids+=($!)
     fi
     node tests/Clients/proxy.mjs "${proxy}" "${work}/server.pem" "${work}/server.key" "http://127.0.0.1:${port}" ${hub:+"${hub}"} \

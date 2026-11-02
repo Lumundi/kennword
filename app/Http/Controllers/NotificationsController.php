@@ -18,7 +18,7 @@ use Throwable;
 
 /**
  * src/api/notifications.rs: the SignalR hubs. Only the notifications daemon
- * (php artisan vaultwarden:notifications) can keep a WebSocket open; it
+ * (php artisan kennword:notifications) can keep a WebSocket open; it
  * passes the upgrade requests through these handlers and takes over the
  * connection when they accept it. Requests that reach PHP otherwise are
  * answered as if WebSockets were disabled.

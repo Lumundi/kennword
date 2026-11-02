@@ -69,7 +69,7 @@ class ReleaseBuildTest extends TestCase
 
                 return '';
             },
-            "*'vaultwarden:web-vault'*" => function (PendingProcess $process): string {
+            "*'kennword:web-vault'*" => function (PendingProcess $process): string {
                 $folder = $process->environment['WEB_VAULT_FOLDER'];
                 $this->assertIsString($folder);
                 mkdir($folder);

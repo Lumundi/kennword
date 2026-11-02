@@ -21,7 +21,7 @@ use Tests\Support\WebSocketClient;
 use Tests\TestCase;
 
 /**
- * php artisan vaultwarden:notifications, started for each test, with
+ * php artisan kennword:notifications, started for each test, with
  * requests of this process handing it their updates.
  */
 class DaemonTest extends TestCase
@@ -53,7 +53,7 @@ class DaemonTest extends TestCase
         $socket = "unix://{$this->dataFolder}/n.sock";
         config(['vaultwarden.notifications_socket' => $socket]);
 
-        $process = proc_open([PHP_BINARY, base_path('artisan'), 'vaultwarden:notifications', '--listen=127.0.0.1:0', '--no-ansi'],
+        $process = proc_open([PHP_BINARY, base_path('artisan'), 'kennword:notifications', '--listen=127.0.0.1:0', '--no-ansi'],
             [1 => ['pipe', 'w'], 2 => ['file', "{$this->dataFolder}/daemon.log", 'w']], $pipes, base_path(),
             [...getenv(), 'DATA_FOLDER' => $this->dataFolder, 'NOTIFICATIONS_SOCKET' => $socket, 'LOG_LEVEL' => 'debug']);
         if ($process === false) {
@@ -324,7 +324,7 @@ class DaemonTest extends TestCase
     {
         $this->changeVaultwardenEnvironment(['ENABLE_WEBSOCKET' => 'false']);
 
-        $this->command('vaultwarden:notifications', ['--listen' => '127.0.0.1:0'])
+        $this->command('kennword:notifications', ['--listen' => '127.0.0.1:0'])
             ->expectsOutputToContain('WebSocket are disabled, realtime sync functionality will not work!')
             ->assertExitCode(1);
     }

@@ -35,8 +35,8 @@ This takes the latest [release](https://github.com/Lumundi/kennword/releases); a
 up:
 
 1. `.env`, copied from `.env.example`, with a new application key (`php artisan key:generate`)
-2. the database schema, in SQLite at `data/db.sqlite3` (`php artisan vaultwarden:migrate`)
-3. the web vault in `web-vault/` (`php artisan vaultwarden:web-vault`, see [below](#web-vault))
+2. the database schema, in SQLite at `data/db.sqlite3` (`php artisan kennword:migrate`)
+3. the web vault in `web-vault/` (`php artisan kennword:web-vault`, see [below](#web-vault))
 
 If a step fails, Composer stops there and names it; the folder and what was done stay. Fix the cause
 and run the remaining steps by hand, in the order above.
@@ -49,8 +49,8 @@ cd kennword
 composer install --no-dev --optimize-autoloader
 cp .env.example .env
 php artisan key:generate
-php artisan vaultwarden:migrate
-php artisan vaultwarden:web-vault
+php artisan kennword:migrate
+php artisan kennword:web-vault
 ```
 
 ## Installing from a release archive
@@ -79,14 +79,14 @@ archive of any commit [yourself](#building-an-archive).
 
    ```bash
    php artisan key:generate
-   php artisan vaultwarden:migrate
+   php artisan kennword:migrate
    ```
 
    Use the PHP command line of the same version as the web server; many hosts name it `php8.5`. If the
    host gives you no shell, run each command once as a cron job, as for the
    [scheduled jobs](#scheduled-jobs).
 
-The web vault needs no download: `php artisan vaultwarden:web-vault` finds it installed. To update,
+The web vault needs no download: `php artisan kennword:web-vault` finds it installed. To update,
 see [Updating](#updating).
 
 ### Building an archive
@@ -100,7 +100,7 @@ php artisan release:build v1.0.0
 
 It takes a tag, branch or commit (the last one by default; changes that are not committed stay out),
 clones it, installs the dependencies with `composer install --no-dev --optimize-autoloader`, installs
-the web vault with `php artisan vaultwarden:web-vault`, leaves out what only development needs (the
+the web vault with `php artisan kennword:web-vault`, leaves out what only development needs (the
 tests, the CI files, the parity matrix and schema snapshots, the tool settings) and writes
 `build/kennword-<version>.tar.gz`, `.zip` and `.sha256`. The version is the tag without its `v`, or
 the first 8 characters of the commit. Next to them it puts the source of the web vault, which the GPL-3.0
@@ -131,7 +131,7 @@ The installation created the schema in SQLite. After setting `DATABASE_URL`, cre
 (and delete the unused `data/db.sqlite3`):
 
 ```bash
-php artisan vaultwarden:migrate
+php artisan kennword:migrate
 ```
 
 ## Web vault
@@ -144,7 +144,7 @@ in the version and image that Vaultwarden's Dockerfile pins (`web_vault` and `we
 example after an update:
 
 ```bash
-php artisan vaultwarden:web-vault
+php artisan kennword:web-vault
 ```
 
 If the folder holds that version already, the command leaves it alone (`--force` installs it anyway).
@@ -170,7 +170,7 @@ docker rm web-vault
 PHP serves its files, with the same headers as Vaultwarden, and adds `/css/vaultwarden.css`, which hides
 what the server does not offer (built from the templates `scss/vaultwarden.scss.hbs` and
 `scss/user.vaultwarden.scss.hbs`, which you may override in `data/templates`). `WEB_VAULT_ENABLED=false`
-leaves the web vault out, as in Vaultwarden; `vaultwarden:web-vault` then installs nothing.
+leaves the web vault out, as in Vaultwarden; `kennword:web-vault` then installs nothing.
 
 ## Permissions
 
@@ -283,7 +283,7 @@ Artisan, as the user PHP runs as. Either keep the scheduler running as a service
 own scheduler, which checks every `JOB_POLL_INTERVAL_MS` (30 seconds by default):
 
 ```bash
-php artisan vaultwarden:schedule
+php artisan kennword:schedule
 ```
 
 for example with a systemd unit:
@@ -296,7 +296,7 @@ After=network.target
 [Service]
 User=www-data
 WorkingDirectory=/var/www/kennword
-ExecStart=/usr/bin/php artisan vaultwarden:schedule
+ExecStart=/usr/bin/php artisan kennword:schedule
 Restart=always
 
 [Install]
@@ -307,7 +307,7 @@ It stops between two checks on `SIGTERM` or `SIGINT` (with PHP's `pcntl` extensi
 cron is available, check once a minute:
 
 ```cron
-* * * * * cd /var/www/kennword && php artisan vaultwarden:schedule --once
+* * * * * cd /var/www/kennword && php artisan kennword:schedule --once
 ```
 
 `--once` keeps the time of the previous run in Laravel's cache and skips a run while the previous one
@@ -319,7 +319,7 @@ minute. A blank schedule turns a job off, `JOB_POLL_INTERVAL_MS=0` all of them. 
 away, whatever its schedule:
 
 ```bash
-php artisan vaultwarden:job trash_purge
+php artisan kennword:job trash_purge
 ```
 
 ## Live notifications
@@ -330,7 +330,7 @@ waits on `/notifications/anonymous-hub` for the approval. PHP-FPM cannot keep su
 a small daemon serves both hubs:
 
 ```bash
-php artisan vaultwarden:notifications
+php artisan kennword:notifications
 ```
 
 It listens on `127.0.0.1:3012` (`--listen=address:port` to change that) and needs PHP's `pcntl`
@@ -361,7 +361,7 @@ After=network.target
 [Service]
 User=www-data
 WorkingDirectory=/var/www/kennword
-ExecStart=/usr/bin/php artisan vaultwarden:notifications
+ExecStart=/usr/bin/php artisan kennword:notifications
 Restart=always
 
 [Install]
@@ -455,14 +455,14 @@ This needs no daemon: the web requests send the notifications themselves, once t
 3. Apply new schema migrations:
 
    ```bash
-   php artisan vaultwarden:migrate
+   php artisan kennword:migrate
    ```
 
 4. Install the web vault of the new version. Unless it pins another one, or it came with the release
    archive, nothing happens:
 
    ```bash
-   php artisan vaultwarden:web-vault
+   php artisan kennword:web-vault
    ```
 
 5. Restart the scheduler and the notifications daemon, if you use them, so that they load the new code.

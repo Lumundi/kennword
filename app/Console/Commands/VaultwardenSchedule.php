@@ -17,14 +17,14 @@ class VaultwardenSchedule extends Command
     /**
      * @var string
      */
-    protected $signature = 'vaultwarden:schedule {--once : Run the jobs due since the previous run and stop, for a cron job every minute}';
+    protected $signature = 'kennword:schedule {--once : Run the jobs due since the previous run and stop, for a cron job every minute}';
 
     /**
      * @var string
      */
     protected $description = "Run Vaultwarden's scheduled jobs, checking every JOB_POLL_INTERVAL_MS";
 
-    private const string CACHE_KEY = 'vaultwarden:schedule';
+    private const string CACHE_KEY = 'kennword:schedule';
 
     private bool $stopping = false;
 

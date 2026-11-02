@@ -11,7 +11,7 @@ use Tests\Fakes\DownloaderFake;
 use Tests\TestCase;
 
 /**
- * vaultwarden:web-vault, with the registries faked: an image like
+ * kennword:web-vault, with the registries faked: an image like
  * bw_web_builds' (the archive in one layer, the web-vault folder in the next),
  * indexed for linux/amd64 and an attestation.
  */
@@ -89,7 +89,7 @@ class WebVaultCommandTest extends TestCase
     {
         $this->serve('ghcr.io');
 
-        $this->command('vaultwarden:web-vault')
+        $this->command('kennword:web-vault')
             ->expectsOutputToContain("Web vault 2026.8.0 installed in {$this->webVault}.")
             ->assertSuccessful();
 
@@ -120,11 +120,11 @@ class WebVaultCommandTest extends TestCase
         file_put_contents("{$this->webVault}/vw-version.json", '{"version":"2026.8.0"}');
         file_put_contents("{$this->webVault}/old.js", 'console.log("old");');
 
-        $this->command('vaultwarden:web-vault')->expectsOutputToContain('Web vault 2026.8.0 is installed already.')->assertSuccessful();
+        $this->command('kennword:web-vault')->expectsOutputToContain('Web vault 2026.8.0 is installed already.')->assertSuccessful();
         $this->assertSame([], $this->downloads->requests);
 
         // Forced, or after an update that pins another version, the folder is replaced as a whole.
-        $this->command('vaultwarden:web-vault', ['--force' => true])->assertSuccessful();
+        $this->command('kennword:web-vault', ['--force' => true])->assertSuccessful();
         $this->assertFileDoesNotExist("{$this->webVault}/old.js");
         $this->assertFileExists("{$this->webVault}/index.html");
         $this->assertSame([], glob("{$this->dataFolder}/.web-vault-*"));
@@ -135,7 +135,7 @@ class WebVaultCommandTest extends TestCase
         $this->downloads->responses['https://ghcr.io/token?scope=repository:dani-garcia/bw_web_builds:pull'] = null;
         $this->serve('docker.io');
 
-        $this->command('vaultwarden:web-vault')->expectsOutputToContain('Web vault 2026.8.0 installed')->assertSuccessful();
+        $this->command('kennword:web-vault')->expectsOutputToContain('Web vault 2026.8.0 installed')->assertSuccessful();
 
         $this->assertFileExists("{$this->webVault}/index.html");
         $this->assertSame('https://auth.docker.io/token?service=registry.docker.io&scope=repository:vaultwarden/web-vault:pull', $this->downloads->requests[1]['url']);
@@ -152,7 +152,7 @@ class WebVaultCommandTest extends TestCase
         $this->downloads->responses["https://ghcr.io/v2/dani-garcia/bw_web_builds/blobs/{$this->digests[2]}"] = [200, 'something else'];
         $this->downloads->responses['https://registry-1.docker.io/v2/vaultwarden/web-vault/manifests/'.$this->digest] = [503, 'Service Unavailable'];
 
-        $this->command('vaultwarden:web-vault')
+        $this->command('kennword:web-vault')
             ->expectsOutputToContain("The download does not match its digest {$this->digests[2]}")
             ->expectsOutputToContain("The registry answered 503 when asked for the manifest {$this->digest}")
             ->expectsOutputToContain('The web vault 2026.8.0 could not be downloaded.')
@@ -167,7 +167,7 @@ class WebVaultCommandTest extends TestCase
     {
         $this->changeVaultwardenEnvironment(['WEB_VAULT_ENABLED' => 'false']);
 
-        $this->command('vaultwarden:web-vault')->expectsOutputToContain('The web vault is disabled')->assertSuccessful();
+        $this->command('kennword:web-vault')->expectsOutputToContain('The web vault is disabled')->assertSuccessful();
 
         $this->assertSame([], $this->downloads->requests);
         $this->assertDirectoryDoesNotExist($this->webVault);

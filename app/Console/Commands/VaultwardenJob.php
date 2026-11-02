@@ -10,7 +10,7 @@ class VaultwardenJob extends Command
     /**
      * @var string
      */
-    protected $signature = 'vaultwarden:job {job : The job, named after its schedule setting, e.g. send_purge}';
+    protected $signature = 'kennword:job {job : The job, named after its schedule setting, e.g. send_purge}';
 
     /**
      * @var string

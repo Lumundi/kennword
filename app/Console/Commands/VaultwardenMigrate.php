@@ -13,7 +13,7 @@ class VaultwardenMigrate extends Command
     /**
      * @var string
      */
-    protected $signature = 'vaultwarden:migrate {--database= : The database connection to use}';
+    protected $signature = 'kennword:migrate {--database= : The database connection to use}';
 
     /**
      * @var string

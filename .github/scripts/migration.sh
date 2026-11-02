@@ -5,8 +5,8 @@
 #
 #   1. Vaultwarden starts on a new database and data folder; the test fills
 #      them through its API.
-#   2. Vaultwarden stops. vaultwarden:check finds nothing that needs attention,
-#      and vaultwarden:migrate runs, as an operator would before switching.
+#   2. Vaultwarden stops. kennword:check finds nothing that needs attention,
+#      and kennword:migrate runs, as an operator would before switching.
 #   3. We serve the same database and data folder on the same port; the test
 #      reads everything back and changes it.
 #   4. Vaultwarden starts on what we left; the test reads our changes.
@@ -119,14 +119,14 @@ for connection in "$@"; do
         phase fill || { fail "${connection}: Vaultwarden could not fill the installation."; return; }
         stop "${pid}"
 
-        php artisan vaultwarden:check --no-ansi || { fail "${connection}: vaultwarden:check found problems in Vaultwarden's installation."; return; }
-        php artisan vaultwarden:migrate --no-ansi || { fail "${connection}: vaultwarden:migrate failed on Vaultwarden's installation."; return; }
+        php artisan kennword:check --no-ansi || { fail "${connection}: kennword:check found problems in Vaultwarden's installation."; return; }
+        php artisan kennword:migrate --no-ansi || { fail "${connection}: kennword:migrate failed on Vaultwarden's installation."; return; }
 
         kennword || { fail "${connection}: Kennword did not start."; return; }
         phase move || { fail "${connection}: the installation did not move over intact."; return; }
         stop "${pid}"
 
-        php artisan vaultwarden:check --no-ansi || { fail "${connection}: vaultwarden:check found problems in what Kennword left."; return; }
+        php artisan kennword:check --no-ansi || { fail "${connection}: kennword:check found problems in what Kennword left."; return; }
         vaultwarden back || { fail "${connection}: Vaultwarden did not start on what Kennword left."; return; }
         phase back || { fail "${connection}: Vaultwarden did not read what Kennword left."; return; }
         stop "${pid}"

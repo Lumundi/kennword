@@ -67,7 +67,7 @@ final readonly class Reference
 
     /**
      * The web vault must be the one Vaultwarden's Docker images ship at the
-     * pinned commit (docker/DockerSettings.yaml), which vaultwarden:web-vault installs.
+     * pinned commit (docker/DockerSettings.yaml), which kennword:web-vault installs.
      */
     public function assertWebVaultMatches(): void
     {

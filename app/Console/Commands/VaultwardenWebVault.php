@@ -15,7 +15,7 @@ class VaultwardenWebVault extends Command
     /**
      * @var string
      */
-    protected $signature = 'vaultwarden:web-vault {--force : Install it even when that version is installed already}';
+    protected $signature = 'kennword:web-vault {--force : Install it even when that version is installed already}';
 
     /**
      * @var string
@@ -79,7 +79,7 @@ class VaultwardenWebVault extends Command
         }
 
         $this->components->error("The web vault {$image->version} could not be downloaded.");
-        $this->line('  Run `php artisan vaultwarden:web-vault` again once the download works, unpack the web vault by hand');
+        $this->line('  Run `php artisan kennword:web-vault` again once the download works, unpack the web vault by hand');
         $this->line('  (see docs/installation.md), or set WEB_VAULT_ENABLED=false to go without it.');
 
         return self::FAILURE;

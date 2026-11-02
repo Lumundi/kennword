@@ -95,7 +95,7 @@ class ReleaseBuild extends Command
             $this->components->task('Installing the web vault', function () use ($staging): void {
                 Process::path($staging)->timeout(1800)
                     ->env(['WEB_VAULT_ENABLED' => 'true', 'WEB_VAULT_FOLDER' => "{$staging}/web-vault/", 'DATA_FOLDER' => "{$staging}/data"])
-                    ->run([PHP_BINARY, 'artisan', 'vaultwarden:web-vault', '--force', '--no-ansi'])
+                    ->run([PHP_BINARY, 'artisan', 'kennword:web-vault', '--force', '--no-ansi'])
                     ->throw();
             });
 

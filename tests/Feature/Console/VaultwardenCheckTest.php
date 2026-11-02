@@ -19,7 +19,7 @@ use Tests\Support\SoftwareAuthenticator;
 use Tests\TestCase;
 
 /**
- * vaultwarden:check on installations as Vaultwarden leaves them, and with
+ * kennword:check on installations as Vaultwarden leaves them, and with
  * what needs attention. Its output may be shared, so every test also makes
  * sure that no value of a row or a setting and no path shows up in it.
  */
@@ -108,9 +108,9 @@ class VaultwardenCheckTest extends TestCase
         $this->assertStringContainsString('3 problems', $output);
         $this->assertPrivate($output, ['top-secret', 'last tuesday', 'other@example.com', '2.broken']);
 
-        // vaultwarden:migrate converts what it can, as Vaultwarden does at every start.
+        // kennword:migrate converts what it can, as Vaultwarden does at every start.
         $connection->table('twofactor')->where('user_uuid', $third->uuid)->delete();
-        $this->assertSame(0, Artisan::call('vaultwarden:migrate'));
+        $this->assertSame(0, Artisan::call('kennword:migrate'));
         $this->assertDoesNotMatchRegularExpression('/Security keys to convert/', $this->check()[1]);
     }
 
@@ -170,7 +170,7 @@ class VaultwardenCheckTest extends TestCase
 
         $this->assertSame(1, $status, $output);
         $this->assertMatchesRegularExpression('/Valid \.+ no/', $output);
-        $this->assertStringContainsString('Vaultwarden would not start with these settings either: SMTP_FROM. php artisan vaultwarden:migrate tells why', $output);
+        $this->assertStringContainsString('Vaultwarden would not start with these settings either: SMTP_FROM. php artisan kennword:migrate tells why', $output);
         // The rest is checked all the same.
         $this->assertMatchesRegularExpression('/Schema \.+ as Vaultwarden/', $output);
         $this->assertPrivate($output, ['top-secret-sender', 'smtp.example.com']);
@@ -228,7 +228,7 @@ class VaultwardenCheckTest extends TestCase
     private function check(): array
     {
         $this->withoutMockingConsoleOutput();
-        $status = Artisan::call('vaultwarden:check', ['--no-ansi' => true]);
+        $status = Artisan::call('kennword:check', ['--no-ansi' => true]);
 
         return [$status, Artisan::output()];
     }
