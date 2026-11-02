@@ -98,8 +98,8 @@ class JobSchedulerTest extends TestCase
     {
         $this->changeVaultwardenEnvironment(['JOB_POLL_INTERVAL_MS' => '0']);
 
-        $this->command('vaultwarden:schedule')->expectsOutputToContain('Job scheduler disabled.')->assertSuccessful();
-        $this->command('vaultwarden:schedule', ['--once' => true])->expectsOutputToContain('Job scheduler disabled.')->assertSuccessful();
+        $this->command('kennword:schedule')->expectsOutputToContain('Job scheduler disabled.')->assertSuccessful();
+        $this->command('kennword:schedule', ['--once' => true])->expectsOutputToContain('Job scheduler disabled.')->assertSuccessful();
     }
 
     public function test_once_ticks_from_the_time_of_the_previous_run(): void
@@ -109,26 +109,26 @@ class JobSchedulerTest extends TestCase
         $expired = $this->expiredSend();
 
         // Like the first tick, the first run only notes the time.
-        $this->command('vaultwarden:schedule', ['--once' => true])->assertSuccessful();
+        $this->command('kennword:schedule', ['--once' => true])->assertSuccessful();
         $this->assertNotNull(Send::findByUuid($expired->uuid));
-        $lastTick = $cache->get('vaultwarden:schedule:send_purge');
+        $lastTick = $cache->get('kennword:schedule:send_purge');
         $this->assertIsInt($lastTick);
         $this->assertEqualsWithDelta(microtime(true), $lastTick / 1_000_000, 5);
 
         // Sends are purged at five past every hour; two hours ago, one of them has passed.
         $this->putLastTick('send_purge', '-2 hours');
-        $this->command('vaultwarden:schedule', ['--once' => true])->assertSuccessful();
+        $this->command('kennword:schedule', ['--once' => true])->assertSuccessful();
         $this->assertNull(Send::findByUuid($expired->uuid));
-        $this->assertGreaterThan($lastTick, $cache->get('vaultwarden:schedule:send_purge'));
+        $this->assertGreaterThan($lastTick, $cache->get('kennword:schedule:send_purge'));
 
         // A run that is still going keeps the next one from starting.
         $expired = $this->expiredSend();
         $this->putLastTick('send_purge', '-2 hours');
         $store = $cache->getStore();
         $this->assertInstanceOf(LockProvider::class, $store);
-        $lock = $store->lock('vaultwarden:schedule:lock', 60);
+        $lock = $store->lock('kennword:schedule:lock', 60);
         $this->assertTrue($lock->get());
-        $this->command('vaultwarden:schedule', ['--once' => true])->expectsOutputToContain('The previous run has not finished yet.')->assertSuccessful();
+        $this->command('kennword:schedule', ['--once' => true])->expectsOutputToContain('The previous run has not finished yet.')->assertSuccessful();
         $this->assertNotNull(Send::findByUuid($expired->uuid));
         $lock->release();
     }
@@ -140,7 +140,7 @@ class JobSchedulerTest extends TestCase
         }
 
         // Laravel traps no signals in tests, so in a process of its own.
-        $process = new Process([PHP_BINARY, base_path('artisan'), 'vaultwarden:schedule'], base_path(), [
+        $process = new Process([PHP_BINARY, base_path('artisan'), 'kennword:schedule'], base_path(), [
             'APP_ENV' => 'local',
             'LOG_CHANNEL' => 'null',
             'JOB_POLL_INTERVAL_MS' => '20',
@@ -189,6 +189,6 @@ class JobSchedulerTest extends TestCase
 
     private function putLastTick(string $job, string $modifier): void
     {
-        $this->app->make(Repository::class)->forever("vaultwarden:schedule:{$job}", (int) Dates::now()->modify($modifier)->format('Uu'));
+        $this->app->make(Repository::class)->forever("kennword:schedule:{$job}", (int) Dates::now()->modify($modifier)->format('Uu'));
     }
 }

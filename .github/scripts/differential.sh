@@ -113,10 +113,10 @@ pids+=($!)
 # php -S rather than artisan serve, which drops most environment variables.
 # Laravel's router script expects to run in the public folder.
 export DATA_FOLDER="${work}/subject"
-php artisan vaultwarden:migrate --no-ansi > /dev/null
-DATA_FOLDER="${work}/features-subject" php artisan vaultwarden:migrate --no-ansi > /dev/null
-DATA_FOLDER="${work}/mail-subject" php artisan vaultwarden:migrate --no-ansi > /dev/null
-DATA_FOLDER="${work}/sso-subject" php artisan vaultwarden:migrate --no-ansi > /dev/null
+php artisan kennword:migrate --no-ansi > /dev/null
+DATA_FOLDER="${work}/features-subject" php artisan kennword:migrate --no-ansi > /dev/null
+DATA_FOLDER="${work}/mail-subject" php artisan kennword:migrate --no-ansi > /dev/null
+DATA_FOLDER="${work}/sso-subject" php artisan kennword:migrate --no-ansi > /dev/null
 # Each PHP server has a cache of its own: the rate limits are per server, like Vaultwarden's.
 (cd public && ADMIN_TOKEN="${admin_token}" CACHE_PATH="${work}/subject-cache" exec php -d upload_max_filesize=525M -d post_max_size=0 -S 127.0.0.1:8080 ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php) \
     > "${work}/subject.log" 2>&1 &
@@ -140,7 +140,7 @@ pids+=($!)
 
 # The hubs of the default pair: Vaultwarden serves them itself, we from the notifications daemon,
 # which the requests of the PHP server reach through a socket in its data folder.
-DATA_FOLDER="${work}/subject" php artisan vaultwarden:notifications --listen=127.0.0.1:8090 --no-ansi > "${work}/notifications.log" 2>&1 &
+DATA_FOLDER="${work}/subject" php artisan kennword:notifications --listen=127.0.0.1:8090 --no-ansi > "${work}/notifications.log" 2>&1 &
 pids+=($!)
 
 for attempt in $(seq 30); do
@@ -179,7 +179,7 @@ if [[ -n "${KEYCLOAK_URL:-}" ]]; then
         'SSO_CLIENT_SECRET=differential+keycloak/secret=' ADMIN_TOKEN="${admin_token}")
     env DATA_FOLDER="${work}/keycloak-reference" "${keycloak_env[@]}" ROCKET_PORT=8005 "${binary}" > "${work}/keycloak-reference.log" 2>&1 &
     pids+=($!)
-    DATA_FOLDER="${work}/keycloak-subject" php artisan vaultwarden:migrate --no-ansi > /dev/null
+    DATA_FOLDER="${work}/keycloak-subject" php artisan kennword:migrate --no-ansi > /dev/null
     (cd public && exec env DATA_FOLDER="${work}/keycloak-subject" "${keycloak_env[@]}" CACHE_PATH="${work}/keycloak-cache" \
         php -d upload_max_filesize=525M -d post_max_size=0 -S 127.0.0.1:8085 ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php) \
         > "${work}/keycloak-subject.log" 2>&1 &

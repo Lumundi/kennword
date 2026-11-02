@@ -94,7 +94,7 @@ class AppServiceProvider extends ServiceProvider
             $this->app->make(RsaKeys::class),
         ));
 
-        // The web vault that vaultwarden:web-vault installs, as parity/reference.json pins it.
+        // The web vault that kennword:web-vault installs, as parity/reference.json pins it.
         $this->app->bind(Downloader::class, StreamDownloader::class);
         $this->app->bind(WebVaultImage::class, function (): WebVaultImage {
             $reference = Reference::load(base_path());

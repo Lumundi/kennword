@@ -16,7 +16,7 @@ use Tests\Support\SoftwareAuthenticator;
 /**
  * An installation moves from Vaultwarden to this implementation and back
  * (.github/scripts/migration.sh). Vaultwarden fills it through its API with
- * every kind of data; after vaultwarden:migrate we read it all back from the
+ * every kind of data; after kennword:migrate we read it all back from the
  * same database and data folder and change it; then Vaultwarden starts on
  * the result and reads our changes. Each phase runs on its own against
  * VW_MIGRATION_URL (VW_MIGRATION_PHASE is fill, move or back) and first
@@ -188,7 +188,7 @@ class MigrationTest extends TestCase
     }
 
     /**
-     * This implementation, after vaultwarden:migrate on Vaultwarden's data:
+     * This implementation, after kennword:migrate on Vaultwarden's data:
      * everything reads back the same and every way to log in works; then we
      * change the installation for Vaultwarden to read.
      */

@@ -62,8 +62,8 @@
             "composer install",
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
             "@php artisan key:generate",
-            "@php artisan vaultwarden:migrate",
-            "@php artisan vaultwarden:web-vault"
+            "@php artisan kennword:migrate",
+            "@php artisan kennword:web-vault"
         ],
         "dev": [
             "Composer\\Config::disableProcessTimeout",
@@ -85,8 +85,8 @@
         ],
         "post-create-project-cmd": [
             "@php artisan key:generate --ansi",
-            "@php artisan vaultwarden:migrate --ansi",
-            "@php artisan vaultwarden:web-vault --ansi"
+            "@php artisan kennword:migrate --ansi",
+            "@php artisan kennword:web-vault --ansi"
         ],
         "pre-package-uninstall": [
             "Illuminate\\Foundation\\ComposerScripts::prePackageUninstall"

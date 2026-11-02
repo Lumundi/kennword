@@ -68,12 +68,12 @@ The `config:` items in [PARITY.md](../PARITY.md) show the state of each setting 
   (`EXTENDED_LOGGING`, `LOG_TIMESTAMP_FORMAT`), with `kennword` where Vaultwarden names its Rust
   module. `LOG_FILE` adds a file and `USE_SYSLOG` the syslog (as `vaultwarden`, facility user), as in
   Vaultwarden; a file is not reopened on `SIGHUP`, which PHP does not need.
-- **Scheduled jobs** run in a process of their own (`php artisan vaultwarden:schedule`) or from cron
+- **Scheduled jobs** run in a process of their own (`php artisan kennword:schedule`) or from cron
   (`--once`), not inside the web server ([Installation](installation.md#scheduled-jobs)).
   `JOB_POLL_INTERVAL_MS` sets how often the process checks; with cron, cron decides, but `0` still
   turns all jobs off.
 - **Live notifications** over WebSocket come from a daemon of their own (`php artisan
-  vaultwarden:notifications`), to which the web server passes `/notifications/`
+  kennword:notifications`), to which the web server passes `/notifications/`
   ([Installation](installation.md#live-notifications)). Requests reach it through a socket in the data
   folder, or at `NOTIFICATIONS_SOCKET`, a setting of Kennword's (`unix:///path` or
   `tcp://host:port`, on a loopback or other non-public address) for both sides. `ENABLE_WEBSOCKET=false`

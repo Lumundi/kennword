@@ -25,7 +25,7 @@ use Tests\Fakes\MailTransportFake;
 use Tests\TestCase;
 
 /**
- * The jobs of schedule_jobs (src/main.rs), each run with `vaultwarden:job`,
+ * The jobs of schedule_jobs (src/main.rs), each run with `kennword:job`,
  * against every database type.
  */
 class ScheduledJobsTest extends TestCase
@@ -272,12 +272,12 @@ class ScheduledJobsTest extends TestCase
 
     public function test_unknown_jobs_are_refused(): void
     {
-        $this->command('vaultwarden:job', ['job' => 'nothing'])->expectsOutputToContain('Unknown job.')->assertFailed();
+        $this->command('kennword:job', ['job' => 'nothing'])->expectsOutputToContain('Unknown job.')->assertFailed();
     }
 
     private function runJob(string $job): void
     {
-        $this->command('vaultwarden:job', ['job' => $job])->assertSuccessful();
+        $this->command('kennword:job', ['job' => $job])->assertSuccessful();
     }
 
     private function user(string $email, string $name): User

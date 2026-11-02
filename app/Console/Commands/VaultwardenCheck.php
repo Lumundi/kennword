@@ -40,7 +40,7 @@ class VaultwardenCheck extends Command
     /**
      * @var string
      */
-    protected $signature = 'vaultwarden:check {--database= : The database connection to check}';
+    protected $signature = 'kennword:check {--database= : The database connection to check}';
 
     /**
      * @var string
@@ -116,7 +116,7 @@ class VaultwardenCheck extends Command
             $config = Config::load($env, base_path(), validate: false);
             $names = self::settingNames($exception->getMessage());
             $this->problem('Valid', 'no', 'Vaultwarden would not start with these settings either'.($names === [] ? '.' : ': '.implode(', ', $names).'.')
-                .' php artisan vaultwarden:migrate tells why; its message may quote values, so do not share it.');
+                .' php artisan kennword:migrate tells why; its message may quote values, so do not share it.');
             // So that the database can be checked with them.
             app()->instance(Config::class, $config);
         }
@@ -200,7 +200,7 @@ class VaultwardenCheck extends Command
         } elseif (is_file($config->path('web_vault_folder').'/index.html')) {
             $this->ok('Web vault', 'found');
         } else {
-            $this->warning('Web vault', 'missing', 'Install it with php artisan vaultwarden:web-vault, or set WEB_VAULT_ENABLED=false.');
+            $this->warning('Web vault', 'missing', 'Install it with php artisan kennword:web-vault, or set WEB_VAULT_ENABLED=false.');
         }
 
         $limits = ['upload_max_filesize' => self::bytes((string) ini_get('upload_max_filesize')), 'post_max_size' => self::bytes((string) ini_get('post_max_size'))];
@@ -272,7 +272,7 @@ class VaultwardenCheck extends Command
                 'These migrations are newer than Vaultwarden '.Release::vaultwarden().', which Kennword follows. Move from that version or an older one.');
         }
         if ($pending !== []) {
-            $this->warning('To apply', (string) count($pending), 'php artisan vaultwarden:migrate applies them, as a Vaultwarden update would. '
+            $this->warning('To apply', (string) count($pending), 'php artisan kennword:migrate applies them, as a Vaultwarden update would. '
                 .'Afterwards, go back only to Vaultwarden '.Release::vaultwarden().' or newer.');
         }
 
@@ -394,7 +394,7 @@ class VaultwardenCheck extends Command
     }
 
     /**
-     * Old U2F and WebAuthn data, which vaultwarden:migrate converts like Vaultwarden does at every start.
+     * Old U2F and WebAuthn data, which kennword:migrate converts like Vaultwarden does at every start.
      */
     private function securityKeys(Connection $connection): void
     {
@@ -425,7 +425,7 @@ class VaultwardenCheck extends Command
 
         if ($u2f + $old > 0) {
             $this->note('Security keys to convert', implode(', ', array_filter([$u2f > 0 ? self::plural($u2f, 'U2F user') : '', $old > 0 ? self::plural($old, 'old WebAuthn user') : ''])));
-            $this->line('    vaultwarden:migrate converts them, as Vaultwarden does at every start.');
+            $this->line('    kennword:migrate converts them, as Vaultwarden does at every start.');
         }
         if ($broken > 0) {
             $this->problem('Security keys', self::plural($broken, 'unreadable row'), 'These keys cannot log in, here as in Vaultwarden, which does not even start with unreadable U2F data. '

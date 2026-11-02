@@ -117,7 +117,7 @@ You need PHP 8.5, Composer's dependencies and a `.env` (see [Installation](insta
 the web vault:
 
 ```bash
-php artisan vaultwarden:web-vault
+php artisan kennword:web-vault
 ```
 
 Then install the clients and Playwright's Chromium once:

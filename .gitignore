@@ -27,7 +27,7 @@ Homestead.yaml
 Thumbs.db
 
 /reference
-# The web vault that `php artisan vaultwarden:web-vault` installs.
+# The web vault that `php artisan kennword:web-vault` installs.
 /web-vault
 # The archives that `php artisan release:build` writes.
 /build

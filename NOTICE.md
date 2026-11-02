@@ -73,7 +73,7 @@ What Kennword takes from it:
 - **Web vault builds** (<https://github.com/dani-garcia/bw_web_builds>), GPL-3.0: the patched Bitwarden
   web vault that Vaultwarden serves. `parity/reference.json` pins version 2026.10.1 and the Docker image
   that Vaultwarden's Dockerfile takes it from. The repository does not include it: `php artisan
-  vaultwarden:web-vault` downloads that image and unpacks its `web-vault` folder, which Kennword
+  kennword:web-vault` downloads that image and unpacks its `web-vault` folder, which Kennword
   then serves. The release archives include it; see [below](#web-vault).
 
 Bitwarden is a trademark of Bitwarden, Inc. Kennword is not affiliated with, associated with or
@@ -104,7 +104,7 @@ from npm in the versions its `package-lock.json` names.
 
 The archives take the build from the image `ghcr.io/dani-garcia/bw_web_builds` (also
 `docker.io/vaultwarden/web-vault`) with the digest that `parity/reference.json` pins, as `php artisan
-vaultwarden:web-vault` does. The image names no source of its own; the tags above are the ones
+kennword:web-vault` does. The image names no source of its own; the tags above are the ones
 bw_web_builds published with that build.
 
 ## Web libraries of the admin panel

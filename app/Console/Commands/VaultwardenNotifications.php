@@ -18,7 +18,7 @@ class VaultwardenNotifications extends Command
     /**
      * @var string
      */
-    protected $signature = 'vaultwarden:notifications
+    protected $signature = 'kennword:notifications
         {--listen=127.0.0.1:3012 : Address and port for the WebSocket clients, which the web server proxies /notifications/ to}';
 
     /**

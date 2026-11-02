@@ -110,14 +110,14 @@ for connection in "$@"; do
     fi
     artisan "${connection}" "${theirs}" parity:schema --output="${snapshot}"
 
-    artisan "${connection}" "${theirs}" vaultwarden:migrate > "${work}/migrate.log"
+    artisan "${connection}" "${theirs}" kennword:migrate > "${work}/migrate.log"
     if ! grep -q 'Nothing to migrate' "${work}/migrate.log"; then
         cat "${work}/migrate.log"
         fail "${dialect}: our migrator wanted to change the database Vaultwarden created."
     fi
 
     create_database "${connection}" "${ours}"
-    artisan "${connection}" "${ours}" vaultwarden:migrate > /dev/null
+    artisan "${connection}" "${ours}" kennword:migrate > /dev/null
     artisan "${connection}" "${ours}" parity:schema --output="${work}/ours-${dialect}.json" > /dev/null
     if ! diff -u "${snapshot}" "${work}/ours-${dialect}.json"; then
         fail "${dialect}: our migrator creates a different schema than Vaultwarden."
