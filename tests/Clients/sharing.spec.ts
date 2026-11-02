@@ -109,14 +109,15 @@ test('the owner keeps items and an organization', async () => {
 test('invites a member, who joins with a new account from the mail', async () => {
     await ownerPage.goto(membersUrl);
     await ownerPage.getByRole('main').getByRole('button', { name: /Invite member/ }).click();
-    const dialog = ownerPage.getByRole('dialog', { name: 'Invite member' });
+    // Since web vault 2026.10 one dialog "Invite members", with the collections under "More settings".
+    const dialog = ownerPage.getByRole('dialog', { name: 'Invite members' });
     await dialog.getByRole('textbox', { name: /Email/ }).fill(member.email);
-    await dialog.getByRole('tab', { name: 'Collections' }).click();
-    await choose(ownerPage, dialog.getByRole('combobox', { name: 'Select collections' }), 'Default collection');
+    await dialog.getByRole('button', { name: 'More settings' }).click();
+    await choose(ownerPage, dialog.getByRole('combobox', { name: 'Collections' }), 'Default collection');
     // The list stays open for more collections.
-    await dialog.getByRole('heading', { name: 'Invite member' }).click();
+    await dialog.getByRole('heading', { name: 'Invite members' }).click();
     await expect(dialog.getByRole('row', { name: /Default collection/ })).toBeVisible();
-    await dialog.getByRole('button', { name: 'Save' }).click();
+    await dialog.getByRole('button', { name: 'Invite', exact: true }).click();
     await expectToast(ownerPage, 'User(s) invited');
 
     // There is no account yet: the link leads to the registration.

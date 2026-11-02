@@ -150,13 +150,14 @@ test('shares an item with an organization', async () => {
     // The list stays open for more collections.
     await dialog.getByRole('heading', { name: /Assign to collections/ }).click();
     await dialog.getByRole('button', { name: 'Assign' }).click();
-    await expectToast(page, 'Item moved to Example Org');
+    await expectToast(page, 'Item moved to collection');
     await expect(page.getByRole('row', { name: /Shared login/ }).getByRole('button', { name: /Owner, Example Org/ })).toBeVisible();
 });
 
 test('creates a Send that others can open', async ({ browser }) => {
     await page.getByRole('link', { name: 'Send', exact: true }).click();
-    await page.getByRole('main').getByRole('button', { name: 'New Send', exact: true }).click();
+    // "Create" with an icon, "New Send" before web vault 2026.10.
+    await page.getByRole('main').getByRole('button', { name: /^\W*Create$/ }).click();
     await page.getByRole('menuitem', { name: 'Text' }).click();
     await page.getByRole('textbox', { name: /Send name/ }).fill('Example send');
     await page.getByRole('textbox', { name: /Text to share/ }).fill('Text of the Send');
@@ -212,8 +213,9 @@ test('switches the key derivation to Argon2id', async () => {
     await dialog.getByRole('textbox', { name: /Master password/ }).fill(account.password);
     await dialog.getByRole('button', { name: 'Update settings' }).click();
 
-    // Every session ends.
-    await expect(page.getByRole('heading', { name: 'Log in' })).toBeVisible();
+    // Since web vault 2026.10 this session goes on; a new login derives the key with the new settings.
+    await expectToast(page, 'Encryption key settings saved');
+    await logOut(page, account);
     await logIn(page, account);
     await expect(page.getByRole('main').getByRole('button', { name: 'Example login', exact: true })).toBeVisible();
 });
