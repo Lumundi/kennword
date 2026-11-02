@@ -42,9 +42,9 @@ final class ApiError extends RuntimeException
     /**
      * err_silent!(message): the same error, but nothing goes to the log.
      */
-    public static function silent(string $message, int $status = 400): self
+    public static function silent(string $message, int $status = 400, ?int $event = null): self
     {
-        return new self($message, $status, 'simple', silent: true);
+        return new self($message, $status, 'simple', event: $event, silent: true);
     }
 
     /**
