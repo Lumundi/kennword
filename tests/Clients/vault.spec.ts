@@ -316,13 +316,22 @@ test('the CLI logs in with the authenticator and decrypts what the web vault mad
 
 test('the web vault shows what the CLI creates', async () => {
     const work = named(await cli.json<Named[]>(['list', 'folders']), 'Work');
-    await cli.run(['create', 'item', Cli.encode({
+    const created = cli.run(['create', 'item', Cli.encode({
         type: 1,
         name: 'Created by the CLI',
         folderId: work.id,
         notes: 'Notes from the CLI',
         login: { username: 'cli@example.com', password: 'cli password', uris: [] },
     })]);
+    if (process.env.VW_CLIENTS_SERVER === 'vaultwarden') {
+        // Vaultwarden 1.37.5 keeps the id of the user key that the rotation above replaced, so it
+        // refuses items encrypted by the new one; Vaultwarphpen drops the old id. This fails once
+        // Vaultwarden fixes it: then port its fix and remove the exception.
+        await expect(created).rejects.toThrow(/Invalid key cipher/);
+
+        return;
+    }
+    await created;
 
     // At once, through the notifications hub.
     await expect(page.getByRole('main').getByRole('button', { name: 'Created by the CLI', exact: true })).toBeVisible();

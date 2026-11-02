@@ -120,9 +120,11 @@ for attempt in $(seq 60); do
 done
 
 export VW_CLIENTS_URL="${url}" VW_CLIENTS_SSO_URL="${sso_url}" VW_CLIENTS_MAIL="${work}/mail" NODE_EXTRA_CA_CERTS="${work}/ca.pem"
+# Where the tests expect Vaultwarden to differ (known upstream bugs that we fix).
+export VW_CLIENTS_SERVER="${binary:+vaultwarden}"
 if [[ "${serve}" == true ]]; then
     echo "Serving ${url} and ${sso_url} (logs in ${work}). In tests/Clients, run:"
-    echo "VW_CLIENTS_URL=${url} VW_CLIENTS_SSO_URL=${sso_url} VW_CLIENTS_MAIL=${work}/mail NODE_EXTRA_CA_CERTS=${work}/ca.pem npx playwright test"
+    echo "VW_CLIENTS_URL=${url} VW_CLIENTS_SSO_URL=${sso_url} VW_CLIENTS_MAIL=${work}/mail NODE_EXTRA_CA_CERTS=${work}/ca.pem VW_CLIENTS_SERVER=${VW_CLIENTS_SERVER} npx playwright test"
     wait
 fi
 

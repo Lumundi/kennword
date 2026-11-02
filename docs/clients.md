@@ -105,6 +105,9 @@ database and the web vault, and runs the tests:
 vault and its hubs itself. The [Clients](../.github/workflows/clients.yml) workflow runs the tests on
 every push; the `clients` job of the [Reference](../.github/workflows/reference.yml) workflow runs them
 against the Vaultwarden it builds. A failure in both is the tests', a failure only in the first is ours.
+Where we fix a bug Vaultwarden still has, the test expects Vaultwarden's failure when `VW_CLIENTS_SERVER`
+is `vaultwarden` (which `clients.sh --vaultwarden` sets), so that it fails once Vaultwarden fixes it; at
+present, the CLI's new item after the account key rotation in `vault.spec.ts`.
 When a run fails, the workflow keeps Playwright's report and a trace of the browser as the
 `clients-report` artifact; open the trace with `npx playwright show-trace`.
 
