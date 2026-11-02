@@ -18,7 +18,7 @@ const SITES = [
     'fivehops.icons.localhost', 'httponly.icons.localhost', 'missing.icons.localhost', 'broken.icons.localhost',
     'allbroken.icons.localhost', 'oversized.icons.localhost', 'bigpage.icons.localhost', 'svg.icons.localhost',
     'brokensvg.icons.localhost', 'datauri.icons.localhost', 'tricky.icons.localhost', 'entities.icons.localhost', 'dupes.icons.localhost',
-    'quirk.icons.localhost', 'gzip.icons.localhost',
+    'quirk.icons.localhost', 'basename.icons.localhost', 'baseattr.icons.localhost', 'gzip.icons.localhost',
     'chunked.icons.localhost', 'cookie.icons.localhost', 'slowicon.icons.localhost', 'gif.icons.localhost', 'jpeg.icons.localhost',
     'webp.icons.localhost', 'bmp.icons.localhost', 'linkblocked.icons.localhost', 'blocked.icons.localhost',
     'invalidlink.icons.localhost', 'negative.localhost', 'cached.icons.localhost', 'wwwonly.localhost', 'www.wwwonly.localhost',
@@ -265,7 +265,8 @@ function respond(string $scheme, string $host, string $target, array $headers, s
             .'<link rel="icon" sizes="24x24" href="data:text/plain,'.rawurlencode(image('png', 'text')).'">',
         )) : $notFound,
         // Every link but the right one would win, if it were taken; images name their URL.
-        'tricky.icons.localhost', 'entities.icons.localhost', 'dupes.icons.localhost', 'quirk.icons.localhost' => $path === '/'
+        'tricky.icons.localhost', 'entities.icons.localhost', 'dupes.icons.localhost', 'quirk.icons.localhost', 'basename.icons.localhost',
+        'baseattr.icons.localhost' => $path === '/'
             ? $ok(tricky($host))
             : $ok(image('png', $target), 'image/png'),
         'gzip.icons.localhost' => match ($path) {
@@ -349,6 +350,10 @@ function tricky(string $host): string
         'dupes.icons.localhost' => ['<link rel=icon href=/first.png href=/second.png sizes=32x32>'],
         // The base leaves at its first href; its second waits and goes to the link.
         'quirk.icons.localhost' => ['<base href="/a/" href=/b/>', '<link rel=icon href=x.png sizes=32x32>'],
+        // Since html5gum 0.9.0 the end of an attribute name comes before the base leaves:
+        // its rel stays with it, or the name after it waits for the link.
+        'basename.icons.localhost' => ['<base href=/ rel><link rel=icon href=/b.png sizes=32x32>'],
+        'baseattr.icons.localhost' => ['<base href=/ x rel><link rel=icon href=/b.png sizes=32x32>'],
     });
 }
 

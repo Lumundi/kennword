@@ -98,6 +98,16 @@ class FaviconSearchTest extends TestCase
             '<base href="/a/" href=/b/><link rel=icon href=x.png>',
             [[30, 'https://example.com/b/']],
         ];
+        // html5gum 0.9.0 (Vaultwarden 1.37.5) reads the end of an attribute name in the step
+        // that started it: a flagged base still takes the attribute, or leaves the next one pending.
+        yield 'a base flagged at a name that ends' => [
+            '<base href=/ rel><link rel=icon href=/b.png>',
+            [[10, 'https://example.com/b.png']],
+        ];
+        yield 'a base flagged before a further name' => [
+            '<base href=/ x rel><link rel=icon href=/b.png>',
+            [],
+        ];
         yield 'an href that is not UTF-8' => [
             "<link rel=icon href=\"\xFF.png\">",
             [[30, 'https://example.com/dir/page.html']],

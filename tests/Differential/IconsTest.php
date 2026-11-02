@@ -45,6 +45,7 @@ class IconsTest extends DifferentialTestCase
             'jpeg.icons.localhost', 'webp.icons.localhost', 'bmp.icons.localhost',
             // What the tokenizer must get right.
             'tricky.icons.localhost', 'entities.icons.localhost', 'dupes.icons.localhost', 'quirk.icons.localhost',
+            'basename.icons.localhost', 'baseattr.icons.localhost',
             // Compressed and chunked answers, a cookie check.
             'gzip.icons.localhost', 'chunked.icons.localhost', 'cookie.icons.localhost',
             // Blocked hosts, links to blocked and invalid hosts, an address, an invalid name.
