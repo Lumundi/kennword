@@ -103,9 +103,10 @@ The `config:` items in [PARITY.md](../PARITY.md) show the state of each setting 
 - **The id of the user key.** Clients since 2026.10 record the id of the account's user key once
   (`POST /api/accounts/key-management/user-key-id`) and send it with new items. Vaultwarden 1.37.5 keeps
   it when the account key is rotated and then refuses the items encrypted by the new key ("Invalid key
-  cipher"); Vaultwarphpen drops the old id with the rotation, so that the clients record the new one.
-  Until Vaultwarden fixes this, an account whose key Vaultwarphpen rotated has no id there either, which
-  Vaultwarden reads like an account that never had one.
+  cipher"). Vaultwarphpen, like Bitwarden's server, takes the id of the new key from the rotation
+  (`newUserKeyId`), and drops the old one when the request names none, as the web vault's does, so that
+  the clients record the new one. An account whose key Vaultwarphpen rotated has no id or the new one,
+  which Vaultwarden reads like any other.
 - **Development routes.** Vaultwarden's debug builds serve static files from the source tree at
   `/vw_static/`; release builds do not, and neither does Vaultwarphpen.
 - **Caches.** Do not cache Laravel's configuration or routes (see
