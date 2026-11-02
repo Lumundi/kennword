@@ -55,7 +55,7 @@ class VaultwardenCheckTest extends TestCase
 
         $this->assertSame(0, $status, $output);
         $this->assertMatchesRegularExpression('/Booked migrations \.+ (\d+) of \1/', $output);
-        $this->assertMatchesRegularExpression('/Schema \.+ as Vaultwarden 1\.37\.4 creates it/', $output);
+        $this->assertMatchesRegularExpression('/Schema \.+ as Vaultwarden 1\.37\.5 creates it/', $output);
         $this->assertMatchesRegularExpression('/Users \.+ 1\b/', $output);
         $this->assertMatchesRegularExpression('/Files \.+ all found/', $output);
         $this->assertMatchesRegularExpression('/RSA key \.+ found, 2048 bits/', $output);

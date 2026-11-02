@@ -302,6 +302,8 @@ class AdminTest extends DifferentialTestCase
             $steps['head'] = self::withEtag($server->send('HEAD', '/vw_static/admin.css'));
             $steps['unknown'] = $server->send('GET', '/vw_static/nope.js');
             $steps['encoded'] = $server->send('GET', '/vw_static/admin%2Ejs');
+            // Vaultwarden 6ed6921c: the name is escaped.
+            $steps['unknown with a quote'] = $server->send('GET', "/vw_static/o'neil%09%22.js");
 
             return $steps;
         });

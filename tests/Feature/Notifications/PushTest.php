@@ -74,8 +74,7 @@ class PushTest extends TestCase
         $this->putJson("/api/devices/identifier/{$this->phone->uuid}/clear-token", [])->assertStatus(200);
 
         $recorded = $this->recorded();
-        $this->assertSame(['/identity/connect/token', '/push/register', '/push/send', '/push/send', "/push/delete/{$this->phone->push_uuid}"],
-            array_column($recorded, 'path'));
+        $this->assertSame(['/identity/connect/token', '/push/register', '/push/send', '/push/send', '/push/delete'], array_column($recorded, 'path'));
 
         // One token, kept for half of its lifetime.
         $this->assertEquals(['grant_type' => 'client_credentials', 'scope' => 'api.push', 'client_id' => 'installation.'.self::INSTALLATION,
@@ -101,6 +100,10 @@ class PushTest extends TestCase
         $this->assertSame(['collectionIds' => null, 'id' => $cipher, 'organizationId' => null], array_intersect_key($this->arrayOf($cipherPush['payload']),
             ['collectionIds' => 0, 'id' => 0, 'organizationId' => 0]));
 
+        // Vaultwarden 80d18594: the push id in a JSON body, not in the path.
+        $this->assertSame(['id' => $this->phone->push_uuid], $recorded[4]['body']);
+        $this->assertSame(['application/json', 'application/json'], [$recorded[4]['contentType'], $recorded[4]['accept']]);
+
         $this->assertNull(Device::findByUuid($this->phone->uuid)?->push_token);
     }
 
@@ -115,13 +118,28 @@ class PushTest extends TestCase
             'payload' => ['date' => $this->arrayOf($logout['payload'])['date'] ?? null, 'userId' => $this->user->uuid], 'type' => 11, 'userId' => $this->user->uuid], $logout);
     }
 
+    /**
+     * Vaultwarden e056359a: the logout reaches the phone after the user and
+     * its devices are gone.
+     */
+    public function test_a_deleted_user_is_signed_out_of_the_phone(): void
+    {
+        $this->putJson("/api/devices/identifier/{$this->phone->uuid}/token", ['pushToken' => 'fcm-token'], $this->auth)->assertStatus(200);
+        $this->json('DELETE', '/api/accounts', ['masterPasswordHash' => 'client-hash'], $this->auth)->assertStatus(200);
+
+        $recorded = $this->recorded();
+        $this->assertSame(['/identity/connect/token', '/push/register', '/push/send'], array_column($recorded, 'path'));
+        $logout = $this->arrayOf($recorded[2]['body']);
+        $this->assertSame([11, $this->user->uuid, null], [$logout['type'], $logout['userId'], $logout['deviceId']]);
+    }
+
     public function test_users_without_a_phone_send_nothing(): void
     {
         $this->postJson('/api/folders', ['name' => '2.folder'], $this->auth)->assertStatus(200);
         // Without a push token the phone is not registered either.
         $this->putJson("/api/devices/identifier/{$this->phone->uuid}/clear-token", [])->assertStatus(200);
 
-        $this->assertSame(['/identity/connect/token', "/push/delete/{$this->phone->push_uuid}"], array_column($this->recorded(), 'path'));
+        $this->assertSame(['/identity/connect/token', '/push/delete'], array_column($this->recorded(), 'path'));
     }
 
     public function test_a_relay_that_refuses_the_installation(): void
@@ -132,6 +150,16 @@ class PushTest extends TestCase
             ->assertStatus(400)->assertJsonPath('message', 'Unexpected push token received from bitwarden server: error decoding response body');
         // Notifications only log the failure.
         $this->postJson('/api/folders', ['name' => '2.folder'], $this->auth)->assertStatus(200);
+    }
+
+    public function test_a_relay_that_refuses_the_unregistration(): void
+    {
+        // The identity server stays, the relay answers 404 below another path.
+        $relay = 'https://'.self::$servicesHost.$this->relay;
+        $this->changeVaultwardenEnvironment(['PUSH_RELAY_URI' => "{$relay}/elsewhere", 'PUSH_IDENTITY_URI' => "{$relay}/identity"]);
+
+        $this->putJson("/api/devices/identifier/{$this->phone->uuid}/clear-token", [])->assertStatus(400)->assertJsonPath('message',
+            "An error occurred during device unregistration: HTTP status client error (404 Not Found) for url ({$relay}/elsewhere/push/delete)");
     }
 
     /**

@@ -10,6 +10,7 @@ use App\Models\Device;
 use App\Models\Folder;
 use App\Models\User;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Testing\TestResponse;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Attributes\Parity;
@@ -52,6 +53,18 @@ class AccountManagementTest extends TestCase
             ->assertJsonPath('version', '2026.6.0');
         $this->assertSame(['communication', 'environment', 'featureStates', 'gitHash', 'object', 'push', 'server', 'settings', 'version'],
             array_keys($this->arrayOf($config->json())));
+    }
+
+    #[Parity('config:FILL_ASSIST_RULES_URL')]
+    public function test_config_names_the_fill_assist_rules(): void
+    {
+        $this->signUp('sqlite');
+        $this->get('/api/config')->assertJsonPath('environment.fillAssistRules', 'https://fillassist.bitwarden.com');
+
+        $this->changeVaultwardenEnvironment(['FILL_ASSIST_RULES_URL' => 'https://rules.example/feeds']);
+        $this->get('/api/config')->assertJsonPath('environment.fillAssistRules', 'https://rules.example/feeds')
+            ->assertJsonPath('environment', fn (array $environment): bool => array_keys($environment)
+                === ['api', 'cloudRegion', 'fillAssistRules', 'identity', 'notifications', 'sso', 'vault']);
     }
 
     #[DataProvider('drivers')]
@@ -132,8 +145,12 @@ class AccountManagementTest extends TestCase
         // Without mail, hints are only given when they may be shown.
         $hint('judy@example.com')->assertJsonPath('message', 'This server is not configured to provide password hints.');
         $this->changeVaultwardenEnvironment(['SHOW_PASSWORD_HINT' => 'true']);
+        // Vaultwarden 6ed6921c: the hint is shown, but not logged.
+        $log = Log::spy();
         $hint('judy@example.com')->assertJsonPath('message', 'Your password hint is: the usual one');
+        $log->shouldNotHaveReceived('error');
         $hint('nobody@example.com')->assertJsonPath('message', 'Sorry, you have no password hint...');
+        $log->shouldHaveReceived('error')->with('Sorry, you have no password hint...');
         $this->changeVaultwardenEnvironment(['PASSWORD_HINTS_ALLOWED' => 'false']);
         $hint('judy@example.com')->assertJsonPath('message', 'This server is not configured to provide password hints.');
         $this->postJson('/api/accounts/password', ['masterPasswordHash' => 'client-hash', 'newMasterPasswordHash' => 'new-hash', 'key' => 'new-key',

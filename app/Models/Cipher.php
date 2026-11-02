@@ -534,6 +534,16 @@ final class Cipher extends Model
     public function moveToFolder(?string $folderUuid, string $userUuid): void
     {
         User::updateUuidRevision($userUuid);
+        $this->moveToFolderWithoutRevisionUpdate($folderUuid, $userUuid);
+    }
+
+    /**
+     * moveToFolder, but the caller updates the user's revision.
+     *
+     * @throws ApiError
+     */
+    public function moveToFolderWithoutRevisionUpdate(?string $folderUuid, string $userUuid): void
+    {
         $current = $this->folderUuid($userUuid);
 
         if ($current === $folderUuid) {

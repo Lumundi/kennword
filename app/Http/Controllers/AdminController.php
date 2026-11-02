@@ -358,9 +358,15 @@ final readonly class AdminController
         $token = $this->token($request);
         $user = self::userOr404(Uuid::parameter($request, $userId));
 
+        // The memberships and push devices before the user is gone.
         $memberships = Membership::findAnyStateByUser($user->uuid);
+        $hasPushDevice = $this->config->bool('push_enabled') && Device::checkUserHasPushDevice($user->uuid);
         try {
             $user->deleteUser();
+            $this->nt->sendLogout($user, null);
+            if ($hasPushDevice) {
+                Push::logoutToRelay($user, null);
+            }
         } finally {
             foreach ($memberships as $member) {
                 Event::log(Event::ORGANIZATION_USER_DELETED, $member->uuid, $member->org_uuid, self::ACTING_ADMIN_USER, self::DEVICE_TYPE, $token->ip);

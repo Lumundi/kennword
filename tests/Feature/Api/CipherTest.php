@@ -13,6 +13,8 @@ use App\Models\Folder;
 use App\Models\TwoFactor;
 use App\Models\User;
 use App\Support\Random;
+use Illuminate\Database\Events\QueryExecuted;
+use Illuminate\Support\Facades\DB;
 use Tests\Attributes\Parity;
 use Tests\Concerns\UsesVaultwardenDatabase;
 use Tests\TestCase;
@@ -219,6 +221,14 @@ class CipherTest extends TestCase
         $this->postJson('/api/ciphers/move', ['folderId' => $folder->uuid, 'ids' => []], $this->auth)
             ->assertStatus(400)->assertJsonPath('message', 'Not all ciphers are moved! 2 of the selected 0 were moved.');
         $this->assertSame($folder->uuid, $this->folderOf($second));
+        // Vaultwarden f1c7eccd: the revision of the user moves once for the whole batch.
+        $revisions = 0;
+        DB::connection('vaultwarden')->listen(static function (QueryExecuted $query) use (&$revisions): void {
+            $revisions += preg_match('/^update "users" set "updated_at"/i', $query->sql);
+        });
+        $this->postJson('/api/ciphers/move', ['folderId' => null, 'ids' => [$first, $second]], $this->auth)->assertStatus(200);
+        $this->assertSame(1, $revisions);
+        $this->assertNull($this->folderOf($second));
     }
 
     public function test_archiving_ciphers(): void

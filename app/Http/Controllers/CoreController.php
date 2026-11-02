@@ -83,6 +83,7 @@ final readonly class CoreController
                 'notifications' => "{$domain}/notifications",
                 'sso' => '',
                 'cloudRegion' => null,
+                'fillAssistRules' => $config->string('fill_assist_rules_url'),
             ],
             'push' => ['pushTechnology' => 0, 'vapidPublicKey' => null],
             'featureStates' => $featureStates,

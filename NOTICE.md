@@ -26,8 +26,8 @@ works listed below remain the work of their authors and keep their licenses.
 
 As section 5 a of the AGPL asks: Vaultwarphpen modifies Vaultwarden by translating it into PHP. The port
 started on 27 October 2026 and follows Vaultwarden commit
-[`64ae55ceb2e33aa08e7291d50ca010c679064842`](https://github.com/dani-garcia/vaultwarden/commit/64ae55ceb2e33aa08e7291d50ca010c679064842)
-(release 1.37.4 and the fixes after it, committed on 28 October 2026), pinned in [`parity/reference.json`](parity/reference.json).
+[`6ed6921cc2b0e03b4d74189574d2a5e71c512e97`](https://github.com/dani-garcia/vaultwarden/commit/6ed6921cc2b0e03b4d74189574d2a5e71c512e97)
+(release 1.37.5, committed on 1 November 2026), pinned in [`parity/reference.json`](parity/reference.json).
 The git history records every change; [`PARITY.md`](PARITY.md) shows what has been ported so far.
 
 ## Vaultwarden
@@ -71,7 +71,7 @@ What Vaultwarphpen takes from it:
   <https://github.com/bitwarden/ios>), by Bitwarden, Inc., GPL-3.0. These are the clients Vaultwarphpen
   has to work with. None of their code is included.
 - **Web vault builds** (<https://github.com/dani-garcia/bw_web_builds>), GPL-3.0: the patched Bitwarden
-  web vault that Vaultwarden serves. `parity/reference.json` pins version 2026.8.0 and the Docker image
+  web vault that Vaultwarden serves. `parity/reference.json` pins version 2026.10.1 and the Docker image
   that Vaultwarden's Dockerfile takes it from. The repository does not include it: `php artisan
   vaultwarden:web-vault` downloads that image and unpacks its `web-vault` folder, which Vaultwarphpen
   then serves. The release archives include it; see [below](#web-vault).
@@ -84,18 +84,18 @@ endorsed by Bitwarden, Inc. or the Vaultwarden project. Vaultwarphpen uses no Bi
 The release archives (built by `php artisan release:build` and attached to the
 [releases](https://github.com/christianrudde/vaultwarphpen/releases)) include, unchanged, the web vault that
 `parity/reference.json` pins, in `web-vault/`: Vaultwarden's build of the Bitwarden web client, version
-2026.8.0. It is licensed under the GPL-3.0, whose text is in [`LICENSES/GPL-3.0.txt`](LICENSES/GPL-3.0.txt).
+2026.10.1. It is licensed under the GPL-3.0, whose text is in [`LICENSES/GPL-3.0.txt`](LICENSES/GPL-3.0.txt).
 The libraries bundled into its scripts keep their notices in the `*.LICENSE.txt` files next to them. The
 web vault is a separate program that the browser runs; the archives only bring it along with Vaultwarphpen.
 
 Its Corresponding Source, as section 6 of the GPL-3.0 calls it, is at these tags, which
 `web_vault_source` in `parity/reference.json` pins:
 
-- the source of the web client: <https://github.com/vaultwarden/vw_web_builds/tree/v2026.8.0+0>,
-  Vaultwarden's fork of [bitwarden/clients](https://github.com/bitwarden/clients) (tag `web-v2026.8.0`)
+- the source of the web client: <https://github.com/vaultwarden/vw_web_builds/tree/v2026.10.1+0>,
+  Vaultwarden's fork of [bitwarden/clients](https://github.com/bitwarden/clients) (tag `web-v2026.10.1`)
   with its changes for Vaultwarden
 - the scripts that build it with `npm run dist:oss:selfhost`, which leaves out the code under the
-  Bitwarden License: <https://github.com/dani-garcia/bw_web_builds/tree/v2026.8.0>
+  Bitwarden License: <https://github.com/dani-garcia/bw_web_builds/tree/v2026.10.1>
 
 So that the source stays available with the archives, whatever happens to those repositories, every
 release carries GitHub's archives of both tags next to its own: `web-vault-<version>-source-vw_web_builds.tar.gz`
@@ -145,8 +145,8 @@ byte for byte. No code is copied from them. Versions are those locked in Vaultwa
 | [jsonwebtoken](https://github.com/Keats/jsonwebtoken) | 11.1.0 | MIT | token validation and its error messages | `app/Auth/Jwt.php` |
 | [governor](https://github.com/boinkor-net/governor) | 0.10.4 | MIT | the GCRA rate limiter | `app/Support/RateLimiter.php` |
 | [data-encoding](https://github.com/ia0/data-encoding) | 2.11.1 | MIT | strict base64 decoding | `app/Models/Send.php`, `app/Auth/Sso/Sso.php` |
-| [openidconnect](https://github.com/ramosbugs/openidconnect-rs), [oauth2](https://github.com/ramosbugs/oauth2-rs) | 4.0.1, 5.0.0 | MIT; MIT or Apache-2.0 | the SSO client: discovery of the provider and its keys, the authorization URL, the token requests and their error messages, the checks of ID tokens and their signatures, the user info | `app/Auth/Sso` |
-| [rsa](https://github.com/RustCrypto/RSA), [p256](https://github.com/RustCrypto/elliptic-curves), [p384](https://github.com/RustCrypto/elliptic-curves) | 0.9.10; 0.13.2, 0.13.1 | MIT or Apache-2.0 | which keys and signatures of ID tokens verify: the limits of RSA keys, RSASSA-PSS with a salt as long as the hash, the lengths of ECDSA keys and signatures | `app/Auth/Sso/Jws.php` |
+| [openidconnect](https://github.com/ramosbugs/openidconnect-rs), [oauth2](https://github.com/ramosbugs/oauth2-rs) | 4.1.0, 5.0.0 | MIT; MIT or Apache-2.0 | the SSO client: discovery of the provider and its keys, the authorization URL, the token requests and their error messages, the checks of ID tokens and their signatures, the user info | `app/Auth/Sso` |
+| [rsa](https://github.com/RustCrypto/RSA), [p256](https://github.com/RustCrypto/elliptic-curves), [p384](https://github.com/RustCrypto/elliptic-curves) | 0.9.10; 0.14.0, 0.14.0 | MIT or Apache-2.0 | which keys and signatures of ID tokens verify: the limits of RSA keys, RSASSA-PSS with a salt as long as the hash, the lengths of ECDSA keys and signatures | `app/Auth/Sso/Jws.php` |
 | [url](https://github.com/servo/rust-url) | 2.5.8 | MIT or Apache-2.0 | WHATWG URL parsing of the settings, form encoding of links and requests, hosts as `Host::parse` reads them | `app/Config/Url.php`, `app/Support/FormUrlencoded.php`, `app/Support/HttpClient.php` |
 | [lettre](https://github.com/lettre/lettre) | 0.11.23 | MIT | how mails are built (alternative text and HTML, related inline images) and sent by SMTP or sendmail | `app/Mail` |
 | [handlebars-rust](https://github.com/sunng87/handlebars-rust) | 6.4.4 | MIT | strict rendering, HTML escaping and the helpers of the templates | `app/Templates` |
@@ -167,7 +167,7 @@ byte for byte. No code is copied from them. Versions are those locked in Vaultwa
 The icon service (`app/Icons`) chooses and cleans icons exactly as Vaultwarden does, so it starts from
 the crates Vaultwarden uses for that, at the versions locked in its `Cargo.lock`:
 
-- **[html5gum](https://github.com/untitaker/html5gum)** 0.8.4, MIT, license [below](#mit-license-html5gum):
+- **[html5gum](https://github.com/untitaker/html5gum)** 0.9.0, MIT, license [below](#mit-license-html5gum):
   [`app/Icons/HtmlTokenizer.php`](app/Icons/HtmlTokenizer.php) ports its tokenizer state by state, and
   [`app/Icons/HtmlEntities.php`](app/Icons/HtmlEntities.php) is generated from its `src/entities.rs`, which
   in turn comes from the WHATWG's [`entities.json`](https://html.spec.whatwg.org/entities.json) (HTML Living

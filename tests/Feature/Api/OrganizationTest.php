@@ -13,6 +13,7 @@ use App\Models\Organization;
 use App\Models\OrgCollection;
 use App\Models\User;
 use App\Support\Random;
+use Illuminate\Support\Facades\Log;
 use Tests\Attributes\Parity;
 use Tests\Concerns\UsesVaultwardenDatabase;
 use Tests\TestCase;
@@ -138,7 +139,11 @@ class OrganizationTest extends TestCase
         $this->put("/api/organizations/{$org}/users/{$ownerId}/revoke", [], $this->owner)->assertStatus(400)->assertJsonPath('message', 'You cannot revoke yourself');
         $this->delete("/api/organizations/{$org}/users/{$ownerId}", [], $this->owner)->assertStatus(400)->assertJsonPath('message', "Can't delete the last owner");
 
-        $this->deleteJson("/api/organizations/{$org}/users", ['ids' => [$newId]], $this->owner)->assertJsonPath('data.0.error', '');
+        // Vaultwarden be5d3ad9 and 6ed6921c: the error's message per member, the details and the escaped id in the log.
+        $log = Log::spy();
+        $this->deleteJson("/api/organizations/{$org}/users", ['ids' => [$newId, "o'x"]], $this->owner)
+            ->assertJsonPath('data.0.error', '')->assertJsonPath('data.1.error', "User to delete isn't member of the organization");
+        $log->shouldHaveReceived('warning')->with("Unable to delete member o\\'x: User to delete isn't member of the organization");
         $this->assertNull(Invitation::findByMail('new@example.com'));
         $this->post("/api/organizations/{$org}/leave", [], $this->member)->assertStatus(200);
         $this->post("/api/organizations/{$org}/leave", [], $this->owner)->assertStatus(400)->assertJsonPath('message', "The last owner can't leave");

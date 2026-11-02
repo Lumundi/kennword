@@ -5,6 +5,7 @@ namespace Tests\Feature\Notifications;
 use App\Auth\AdminToken;
 use App\Auth\AuthMethod;
 use App\Auth\Jwt;
+use App\Auth\JwtIssuer;
 use App\Auth\LoginClaims;
 use App\Models\Device;
 use App\Models\User;
@@ -202,6 +203,36 @@ class NotifyTest extends TestCase
         $this->assertSame([[UpdateType::LogOut->value, null], [UpdateType::LogOut->value, null]], $this->typesAndIds());
         $this->assertSame([[$this->user->uuid], [$this->user->uuid]], array_column($this->channel->updates(), 'to'));
         $this->assertNull($this->arrayOf($this->channel->updates()[0]['update'])['ContextId']);
+    }
+
+    /**
+     * Vaultwarden e056359a: a deleted user's clients are signed out.
+     */
+    public function test_deleted_users_are_signed_out(): void
+    {
+        $this->json('DELETE', '/api/accounts', ['masterPasswordHash' => 'client-hash'], $this->auth)->assertStatus(200);
+        $this->assertSame([[UpdateType::LogOut->value, null]], $this->typesAndIds());
+        $this->assertSame([[$this->user->uuid]], array_column($this->channel->updates(), 'to'));
+
+        $second = User::new('second@example.com');
+        $second->save();
+        $jwt = $this->app->make(Jwt::class);
+        $token = $jwt->encode(['nbf' => time(), 'exp' => time() + 60, 'iss' => $jwt->issuer(JwtIssuer::Delete), 'sub' => $second->uuid]);
+        $this->postJson('/api/accounts/delete-recover-token', ['userId' => $second->uuid, 'token' => $token])->assertStatus(200);
+
+        $third = User::new('third@example.com');
+        $third->save();
+        $login = $this->call('POST', '/admin', server: ['CONTENT_TYPE' => 'application/x-www-form-urlencoded'], content: 'token=admin-secret');
+        $cookie = null;
+        foreach ($login->headers->getCookies() as $candidate) {
+            $cookie = $candidate->getName() === AdminToken::COOKIE_NAME ? $candidate->getValue() : $cookie;
+        }
+        $this->assertIsString($cookie);
+        $this->withUnencryptedCookie(AdminToken::COOKIE_NAME, $cookie)->withCredentials();
+        $this->postJson("/admin/users/{$third->uuid}/delete", [])->assertStatus(200);
+
+        $this->assertSame([[$this->user->uuid], [$second->uuid], [$third->uuid]], array_column($this->channel->updates(), 'to'));
+        $this->assertSame(array_fill(0, 3, [UpdateType::LogOut->value, null]), $this->typesAndIds());
     }
 
     public function test_nothing_is_sent_with_websockets_and_push_disabled(): void

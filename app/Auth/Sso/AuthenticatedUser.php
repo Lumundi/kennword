@@ -3,6 +3,7 @@
 namespace App\Auth\Sso;
 
 use App\Http\Json;
+use App\Support\EscapeDebug;
 use stdClass;
 
 /**
@@ -36,6 +37,22 @@ final readonly class AuthenticatedUser
             'email_verified' => $this->emailVerified,
             'user_name' => $this->userName,
         ]);
+    }
+
+    /**
+     * The derived Debug formatting, which SSO_DEBUG_TOKENS logs.
+     */
+    public function debug(): string
+    {
+        $option = static fn (?string $value): string => $value === null ? 'None' : 'Some('.EscapeDebug::debug($value).')';
+
+        return 'OIDCAuthenticatedUser { refresh_token: '.$option($this->refreshToken)
+            .', access_token: '.EscapeDebug::debug($this->accessToken)
+            .', expires_in: '.($this->expiresIn === null ? 'None' : "Some({$this->expiresIn}s)")
+            .', identifier: OIDCIdentifier('.EscapeDebug::debug($this->identifier).')'
+            .', email: '.EscapeDebug::debug($this->email)
+            .', email_verified: '.($this->emailVerified === null ? 'None' : 'Some('.($this->emailVerified ? 'true' : 'false').')')
+            .', user_name: '.$option($this->userName).' }';
     }
 
     /**

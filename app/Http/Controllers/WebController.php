@@ -16,6 +16,7 @@ use App\Http\Json;
 use App\Http\Redirect;
 use App\Models\Attachment;
 use App\Support\Dates;
+use App\Support\EscapeDebug;
 use App\Support\Uuid;
 use App\Support\WebVault;
 use App\Templates\TemplateRenderer;
@@ -199,7 +200,7 @@ final readonly class WebController
      */
     public function staticFiles(Request $request, string $filename): EtagCached
     {
-        [$folder, $contentType] = self::STATIC_FILES[$filename] ?? throw ApiError::message("Static file not found: {$filename}");
+        [$folder, $contentType] = self::STATIC_FILES[$filename] ?? throw ApiError::message('Static file not found: '.EscapeDebug::of($filename));
         $content = (string) file_get_contents(resource_path("vaultwarden/static/{$folder}/{$filename}"));
 
         return new EtagCached($request, $content, $contentType, hash('sha256', $content));

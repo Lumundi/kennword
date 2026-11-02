@@ -8,6 +8,7 @@ use App\Support\CronSchedule;
 use App\Support\EmailAddress;
 use App\Support\EscapeDebug;
 use App\Support\IpNetwork;
+use Uri\WhatWg\Url as WhatWgUrl;
 
 /**
  * validate_config (src/config.rs): the checks that keep Vaultwarden from
@@ -105,6 +106,15 @@ final class ConfigValidator
         $domain = strtolower($config->string('domain'));
         if (! str_starts_with($domain, 'http://') && ! str_starts_with($domain, 'https://')) {
             self::fail("DOMAIN variable needs to contain the protocol (http, https). Use 'http[s]://bw.example.com' instead of 'bw.example.com'");
+        }
+
+        $rulesUrl = $config->string('fill_assist_rules_url');
+        $parsed = WhatWgUrl::parse($rulesUrl);
+        // Nothing to trim: str::trim goes by Unicode White_Space.
+        if ($parsed === null || $parsed->getScheme() !== 'https' || ($parsed->getAsciiHost() ?? '') === '' || ($parsed->getUsername() ?? '') !== ''
+            || ($parsed->getPassword() ?? '') !== '' || $parsed->getQuery() !== null || $parsed->getFragment() !== null
+            || preg_match('/^\p{White_Space}|\p{White_Space}$/Du', $rulesUrl) === 1) {
+            self::fail('`FILL_ASSIST_RULES_URL` must be a valid HTTPS URL without credentials, query parameters, fragments, or surrounding whitespace.');
         }
 
         foreach (preg_split('/\s+/', strtolower($config->string('allowed_connect_src')), flags: PREG_SPLIT_NO_EMPTY) ?: [] as $source) {
@@ -227,6 +237,11 @@ final class ConfigValidator
 
         if ($config->int('invitation_expiration_hours') < 1) {
             self::fail('`INVITATION_EXPIRATION_HOURS` has a minimum duration of 1 hour');
+        }
+
+        $rememberDays = $config->int('two_factor_remember_days');
+        if ($rememberDays < 1 || $rememberDays > 90) {
+            self::fail('`TWO_FACTOR_REMEMBER_DAYS` must be between 1 and 90 days');
         }
 
         foreach (self::SCHEDULES as $name) {

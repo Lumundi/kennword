@@ -34,7 +34,7 @@ class CoreRoutesTest extends TestCase
     #[Parity('route:GET /api/version')]
     public function test_version(): void
     {
-        $this->get('/api/version')->assertStatus(200)->assertContent('"1.37.4"');
+        $this->get('/api/version')->assertStatus(200)->assertContent('"1.37.5"');
     }
 
     public function test_alive_needs_the_database(): void

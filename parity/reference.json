@@ -1,12 +1,12 @@
 {
     "repository": "https://github.com/dani-garcia/vaultwarden.git",
-    "commit": "64ae55ceb2e33aa08e7291d50ca010c679064842",
-    "committed_at": "2026-10-28T23:14:28+01:00",
-    "release": "1.37.4",
-    "web_vault": "2026.8.0",
-    "web_vault_digest": "sha256:632375471c7c06a799335cd74dfeaef63f92f45f9cd322c337ae7ad70081e48a",
+    "commit": "6ed6921cc2b0e03b4d74189574d2a5e71c512e97",
+    "committed_at": "2026-11-01T22:38:18+01:00",
+    "release": "1.37.5",
+    "web_vault": "2026.10.1",
+    "web_vault_digest": "sha256:7baaa7d5349742548b6c44e557c1512157b22010cdf314ccc399ffdcacb5eb52",
     "web_vault_source": {
-        "vaultwarden/vw_web_builds": "v2026.8.0+0",
-        "dani-garcia/bw_web_builds": "v2026.8.0"
+        "vaultwarden/vw_web_builds": "v2026.10.1+0",
+        "dani-garcia/bw_web_builds": "v2026.10.1"
     }
 }

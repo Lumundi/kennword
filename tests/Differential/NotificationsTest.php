@@ -210,6 +210,27 @@ class NotificationsTest extends DifferentialTestCase
         });
     }
 
+    /**
+     * Vaultwarden e056359a: deleting the account signs its clients out.
+     */
+    #[Parity('route:DELETE /api/accounts')]
+    public function test_a_deleted_account_is_signed_out(): void
+    {
+        $this->assertSameNotificationFlows(function (Server $server): array {
+            [$auth] = CipherTest::session($server, 'updates-deleted@example.com');
+            $hub = $server->hub('/notifications/hub?access_token='.substr($auth['Authorization'], strlen('Bearer ')));
+            $hub->handshake();
+            $hub->drain(0.3);
+            $steps = [];
+
+            $steps['delete account'] = $server->json('DELETE', '/api/accounts', ['masterPasswordHash' => 'client-hash'], $auth);
+            $steps['delete account (updates)'] = self::updates($hub);
+            $hub->close();
+
+            return $steps;
+        });
+    }
+
     #[Parity('route:POST /api/ciphers/create')]
     #[Parity('route:PUT /api/ciphers/{cipher_id}/collections_v2')]
     #[Parity('route:PUT /api/ciphers/{cipher_id}/share')]
@@ -295,6 +316,9 @@ class NotificationsTest extends DifferentialTestCase
             $step('equivalent domains', $server->json('POST', '/api/settings/domains', ['equivalentDomains' => [], 'excludedGlobalEquivalentDomains' => []], $auth));
             $step('clear push token', $server->send('PUT', "/api/devices/identifier/{$phone}/clear-token"));
             $step('create folder without token', $server->json('POST', '/api/folders', ['name' => '2.folder'], $auth));
+            // Vaultwarden e056359a: the logout reaches the relay after the devices are gone.
+            $step('push token again', $server->json('PUT', "/api/devices/identifier/{$phone}/token", ['pushToken' => 'fcm-token'], $auth));
+            $step('delete account', $server->json('DELETE', '/api/accounts', ['masterPasswordHash' => 'client-hash'], $auth));
 
             return $steps;
         });

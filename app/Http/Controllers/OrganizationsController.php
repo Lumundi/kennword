@@ -52,6 +52,7 @@ use App\Support\Uuid;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use stdClass;
+use Uri\WhatWg\Url;
 
 /**
  * src/api/core/organizations.rs: organizations, their members, collections,
@@ -506,13 +507,13 @@ final readonly class OrganizationsController
         $orgCollections = OrgCollection::findByOrganization($orgId)->pluck('uuid')->all();
         foreach ($collections as $collection) {
             if (! in_array($collection['id'], $orgCollections, true)) {
-                throw ApiError::message('Invalid collection', logMessage: "Collection {$collection['id']} does not belong to organization {$orgId}!");
+                throw ApiError::message('Invalid collection', logMessage: 'Collection '.EscapeDebug::of($collection['id'])." does not belong to organization {$orgId}!");
             }
         }
         $orgGroups = self::groupIds($orgId);
         foreach ($groups as $group) {
             if (! in_array($group, $orgGroups, true)) {
-                throw ApiError::message('Invalid group', logMessage: "Group {$group} does not belong to organization {$orgId}!");
+                throw ApiError::message('Invalid group', logMessage: 'Group '.EscapeDebug::of($group)." does not belong to organization {$orgId}!");
             }
         }
 
@@ -659,7 +660,7 @@ final readonly class OrganizationsController
         $orgId = $this->orgId($request, $orgId, $headers);
         $ids = Body::json($request)->stringList('ids');
 
-        return self::bulkResponse($ids, 'OrganizationBulkConfirmResponseModel', fn (string $id) => $this->reinvite($orgId, $id, $headers->user->email));
+        return self::bulkResponse($ids, 'OrganizationBulkConfirmResponseModel', 'reinvite', fn (string $id) => $this->reinvite($orgId, $id, $headers->user->email));
     }
 
     /**
@@ -691,7 +692,7 @@ final readonly class OrganizationsController
         $responses = [];
         foreach ($invites as [$memberId, $key]) {
             $memberId ?? throw ApiError::message('Member id is required');
-            $responses[] = self::bulkItem($memberId, 'OrganizationBulkConfirmResponseModel', fn () => $this->confirm($orgId, $memberId, $key ?? '', $headers));
+            $responses[] = self::bulkItem($memberId, 'OrganizationBulkConfirmResponseModel', 'confirm', fn () => $this->confirm($orgId, $memberId, $key ?? '', $headers));
         }
         if ($keys === null) {
             logger()->error('No keys to confirm');
@@ -776,7 +777,7 @@ final readonly class OrganizationsController
         $orgId = $this->orgId($request, $orgId, $headers);
         $ids = Body::json($request)->stringList('ids');
 
-        return self::bulkResponse($ids, 'OrganizationBulkConfirmResponseModel', fn (string $id) => $this->removeMember($orgId, $id, $headers));
+        return self::bulkResponse($ids, 'OrganizationBulkConfirmResponseModel', 'delete', fn (string $id) => $this->removeMember($orgId, $id, $headers));
     }
 
     /**
@@ -822,7 +823,7 @@ final readonly class OrganizationsController
             logger()->error('No users to revoke');
         }
 
-        return self::bulkResponse($ids ?? [], 'OrganizationUserBulkResponseModel', fn (string $id) => $this->revoke($orgId, $id, $headers));
+        return self::bulkResponse($ids ?? [], 'OrganizationUserBulkResponseModel', 'revoke', fn (string $id) => $this->revoke($orgId, $id, $headers));
     }
 
     /**
@@ -845,7 +846,7 @@ final readonly class OrganizationsController
         $orgId = $this->orgId($request, $orgId, $headers);
         $ids = Body::json($request)->stringList('ids');
 
-        return self::bulkResponse($ids, 'OrganizationUserBulkResponseModel', fn (string $id) => $this->restore($orgId, $id, $headers));
+        return self::bulkResponse($ids, 'OrganizationUserBulkResponseModel', 'restore', fn (string $id) => $this->restore($orgId, $id, $headers));
     }
 
     /**
@@ -1455,6 +1456,19 @@ final readonly class OrganizationsController
             throw ApiError::message('Invalid or unsupported policy type');
         }
 
+        $current = OrgPolicy::findByOrgAndType($orgId, $type);
+        $currentlyEnabled = $current?->enabled === true;
+
+        // Fill Assist depends on Single Organization, checked like Bitwarden only when a policy changes state.
+        if ($type === OrgPolicy::TYPE_FILL_ASSIST && $enabled && ! $currentlyEnabled
+            && OrgPolicy::findByOrgAndType($orgId, OrgPolicy::TYPE_SINGLE_ORG)?->enabled !== true) {
+            throw ApiError::message('Turn on the Single organization policy because it is required for the Activate fill assist policy.');
+        }
+        if ($type === OrgPolicy::TYPE_SINGLE_ORG && ! $enabled && $currentlyEnabled
+            && OrgPolicy::findByOrgAndType($orgId, OrgPolicy::TYPE_FILL_ASSIST)?->enabled === true) {
+            throw ApiError::message('Turn off the Activate fill assist policy because it requires the Single organization policy.');
+        }
+
         // Bitwarden requires the single organization policy for account recovery; here only when configured.
         if ($this->config->bool('enforce_single_org_with_reset_pw_policy')) {
             if ($type === OrgPolicy::TYPE_RESET_PASSWORD && $enabled
@@ -1465,6 +1479,10 @@ final readonly class OrganizationsController
                 && OrgPolicy::findByOrgAndType($orgId, OrgPolicy::TYPE_RESET_PASSWORD)?->enabled === true) {
                 throw ApiError::message('Account recovery policy is enabled. It is not allowed to disable this policy.');
             }
+        }
+
+        if ($type === OrgPolicy::TYPE_FILL_ASSIST) {
+            self::checkFillAssistData($data, $enabled);
         }
 
         if ($type === OrgPolicy::TYPE_TWO_FACTOR_AUTHENTICATION && $enabled) {
@@ -1481,14 +1499,14 @@ final readonly class OrganizationsController
                         $user = User::findByUuid($member->user_uuid) ?? throw new \LogicException("User {$member->user_uuid} is missing");
                         Mail::sendSingleOrgRemovedFromOrg($user->email, $org->name);
                     }
-                    self::logEvent(Event::ORGANIZATION_USER_REMOVED, $member->uuid, $orgId, $headers);
+                    self::logEvent(Event::ORGANIZATION_USER_REVOKED_SINGLE_ORGANIZATION_NON_COMPLIANCE, $member->uuid, $orgId, $headers);
                     $member->revoke();
                     $member->save();
                 }
             }
         }
 
-        $policy = OrgPolicy::findByOrgAndType($orgId, $type) ?? OrgPolicy::new($orgId, $type, false, '{}');
+        $policy = $current ?? OrgPolicy::new($orgId, $type, false, '{}');
         $policy->enabled = $enabled;
         // serde_json::to_string of an Option<Value>: keys sorted, none as null.
         $policy->data = Json::encode(Json::sorted($data));
@@ -1496,6 +1514,56 @@ final readonly class OrganizationsController
         self::logEvent(Event::POLICY_UPDATED, $policy->uuid, $orgId, $headers);
 
         return Json::response($policy->toApi());
+    }
+
+    /**
+     * The data of a Fill Assist policy (FillAssistPolicyData): a rules URL,
+     * which an enabled policy needs, with HTTPS.
+     *
+     * @throws ApiError
+     */
+    private static function checkFillAssistData(mixed $data, bool $enabled): void
+    {
+        $rulesUrl = self::fillAssistRulesUrl($data) ?? throw ApiError::message('Invalid data for FillAssist policy: rulesUrl has an invalid value.');
+        if (! $enabled) {
+            return;
+        }
+
+        // Blank after str::trim.
+        if ($rulesUrl[0] === null || preg_match('/^\p{White_Space}*$/Du', $rulesUrl[0]) === 1) {
+            throw ApiError::message('The RulesUrl field is required.');
+        }
+        $url = Url::parse($rulesUrl[0]);
+        if ($url === null || ($url->getAsciiHost() ?? '') === '' || ! in_array($url->getScheme(), ['http', 'https', 'ftp'], true)) {
+            throw ApiError::message('The RulesUrl field is not a valid fully-qualified http, https, or ftp URL.');
+        }
+        if ($url->getScheme() !== 'https') {
+            throw ApiError::message('RulesUrl must use HTTPS.');
+        }
+    }
+
+    /**
+     * serde_json::from_value::<FillAssistPolicyData>: null is no data, an
+     * object has rulesUrl (alias RulesUrl), and like any derived struct, a
+     * sequence holds its one field. Null when it does not deserialize.
+     *
+     * @return array{?string}|null
+     */
+    private static function fillAssistRulesUrl(mixed $data): ?array
+    {
+        if ($data === null) {
+            return [null];
+        }
+        if ($data instanceof stdClass) {
+            $values = array_values(array_intersect_key(get_object_vars($data), ['rulesUrl' => true, 'RulesUrl' => true]));
+        } elseif (is_array($data) && count($data) === 1) {
+            $values = $data;
+        } else {
+            return null;
+        }
+        $value = $values[0] ?? null;
+
+        return count($values) <= 1 && ($value === null || is_string($value)) ? [$value] : null;
     }
 
     /**
@@ -1739,14 +1807,14 @@ final readonly class OrganizationsController
         $collections = OrgCollection::findByOrganization($orgId)->pluck('uuid')->all();
         foreach ($data['collections'] as $collection) {
             if (! in_array($collection['id'], $collections, true)) {
-                throw ApiError::message('Invalid collection', logMessage: "Collection {$collection['id']} does not belong to organization {$orgId}!");
+                throw ApiError::message('Invalid collection', logMessage: 'Collection '.EscapeDebug::of($collection['id'])." does not belong to organization {$orgId}!");
             }
         }
 
         $members = Membership::findByOrg($orgId)->pluck('uuid')->all();
         foreach ($data['users'] as $memberId) {
             if (! in_array($memberId, $members, true)) {
-                throw ApiError::message('Invalid member', logMessage: "Member {$memberId} does not belong to organization {$orgId}!");
+                throw ApiError::message('Invalid member', logMessage: 'Member '.EscapeDebug::of($memberId)." does not belong to organization {$orgId}!");
             }
         }
     }
@@ -2019,7 +2087,7 @@ final readonly class OrganizationsController
         $members = Membership::findByOrg($orgId)->pluck('uuid')->all();
         foreach ($users as $user) {
             if (! in_array($user['id'], $members, true)) {
-                throw ApiError::message('Invalid member', logMessage: "Member {$user['id']} does not belong to organization {$orgId}!");
+                throw ApiError::message('Invalid member', logMessage: 'Member '.EscapeDebug::of($user['id'])." does not belong to organization {$orgId}!");
             }
         }
     }
@@ -2034,7 +2102,7 @@ final readonly class OrganizationsController
         $orgGroups = self::groupIds($orgId);
         foreach ($groups as $group) {
             if (! in_array($group['id'], $orgGroups, true)) {
-                throw ApiError::message('Invalid group', logMessage: "Group {$group['id']} does not belong to organization {$orgId}!");
+                throw ApiError::message('Invalid group', logMessage: 'Group '.EscapeDebug::of($group['id'])." does not belong to organization {$orgId}!");
             }
         }
     }
@@ -2194,9 +2262,9 @@ final readonly class OrganizationsController
      * @param  list<string>  $ids
      * @param  callable(string): void  $action
      */
-    private static function bulkResponse(array $ids, string $object, callable $action): Response
+    private static function bulkResponse(array $ids, string $object, string $verb, callable $action): Response
     {
-        $responses = array_map(static fn (string $id): array => self::bulkItem($id, $object, static fn () => $action($id)), $ids);
+        $responses = array_map(static fn (string $id): array => self::bulkItem($id, $object, $verb, static fn () => $action($id)), $ids);
 
         return Json::response(Json::sorted(['data' => $responses, 'object' => 'list', 'continuationToken' => null]));
     }
@@ -2205,13 +2273,15 @@ final readonly class OrganizationsController
      * @param  callable(): void  $action
      * @return array<string, string>
      */
-    private static function bulkItem(string $id, string $object, callable $action): array
+    private static function bulkItem(string $id, string $object, string $verb, callable $action): array
     {
         try {
             $action();
             $error = '';
         } catch (ApiError $exception) {
-            $error = $exception->debugText();
+            // The details only go to the log.
+            logger()->warning("Unable to {$verb} member ".EscapeDebug::of($id).": {$exception->debugText()}");
+            $error = $exception->userMessage();
         }
 
         return ['error' => $error, 'id' => $id, 'object' => $object];

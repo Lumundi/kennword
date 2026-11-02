@@ -3,10 +3,12 @@
 namespace Tests\Feature\Api;
 
 use App\Http\Data\Body;
+use App\Mail\Transport;
 use App\Models\Invitation;
 use App\Models\User;
 use Tests\Attributes\Parity;
 use Tests\Concerns\UsesVaultwardenDatabase;
+use Tests\Fakes\MailTransportFake;
 use Tests\TestCase;
 
 /**
@@ -51,6 +53,38 @@ class RegistrationTest extends TestCase
         $prelogin(str_pad($json, Body::JSON_LIMIT))->assertStatus(200);
         $prelogin(str_pad($json, Body::JSON_LIMIT + 1))->assertStatus(413)->assertSee('Payload Too Large');
         $prelogin($json, ['CONTENT_LENGTH' => (string) (Body::JSON_LIMIT + 1)])->assertStatus(413);
+    }
+
+    #[Parity('route:POST /identity/accounts/register/verification-email-clicked')]
+    public function test_the_link_of_the_verification_mail(): void
+    {
+        $clicked = fn (string $email, mixed $token) => $this->postJson('/identity/accounts/register/verification-email-clicked',
+            ['email' => $email, 'emailVerificationToken' => $token]);
+        $expired = 'Expired link. Please restart registration or try logging in. You may already have an account';
+
+        // Without mail, the token is not verified.
+        $token = $this->postJson('/identity/accounts/register/send-verification-email', ['email' => 'grace@example.com'])->json();
+        $clicked('grace@example.com', $token)->assertStatus(400)->assertJsonPath('message', $expired);
+
+        $mails = new MailTransportFake;
+        $this->app->instance(Transport::class, $mails);
+        $this->changeVaultwardenEnvironment(['SMTP_HOST' => 'localhost', 'SMTP_FROM' => 'vault@example.com', 'SIGNUPS_VERIFY' => 'true']);
+        $this->postJson('/identity/accounts/register/send-verification-email', ['email' => 'grace@example.com'])->assertStatus(204);
+        // Vaultwarden 42660af7: the link says it comes from the mail.
+        if (preg_match('~/#/finish-signup/\?email=grace%40example\.com&token=([^&"\s]+)&fromEmail=true~', $mails->last('grace@example.com')['text'], $link) !== 1) {
+            $this->fail('No link in the mail.');
+        }
+        $token = $link[1];
+
+        $clicked('GRACE@example.com', $token)->assertStatus(200)->assertContent('');
+        $clicked('other@example.com', $token)->assertStatus(400)->assertJsonPath('message', $expired);
+        $clicked('grace@example.com', 'nope')->assertStatus(400)->assertJsonPath('message', $expired);
+        $this->postJson('/identity/accounts/register/verification-email-clicked', ['email' => 'grace@example.com'])->assertStatus(422);
+
+        // Once the account exists, the link is used up.
+        $this->postJson('/identity/accounts/register/finish', ['email' => 'grace@example.com', 'emailVerificationToken' => $token, 'kdf' => 0, 'kdfIterations' => 600000,
+            'masterPasswordHash' => 'client-hash', 'key' => 'user-key', 'keys' => ['encryptedPrivateKey' => 'private', 'publicKey' => 'public']])->assertStatus(200);
+        $clicked('grace@example.com', $token)->assertStatus(400)->assertJsonPath('message', $expired);
     }
 
     public function test_registration_with_the_old_format(): void

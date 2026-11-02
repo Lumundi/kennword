@@ -110,7 +110,7 @@ function respond(string $method, string $target, array $headers, string $body, s
  * whoever the test names with extra parameters: email, sub (default from
  * the email), name and verified (true, false, text-true and text-false for
  * the strings some providers send, or absent); deny=1 answers
- * with an error instead. Tokens are RS256 JWTs of a key made at start.
+ * with an error instead, described by deny_description if given. Tokens are RS256 JWTs of a key made at start.
  *
  * @return array{int, string, string}
  */
@@ -177,7 +177,7 @@ function oidcAuthorize(array $query, string $state): array
     }
     if (($query['deny'] ?? null) === '1') {
         return [302, 'text/plain', '', ['Location' => $redirect.$separator.http_build_query(['state' => $clientState, 'error' => 'access_denied',
-            'error_description' => 'The user said no'])]];
+            'error_description' => is_string($query['deny_description'] ?? null) ? $query['deny_description'] : 'The user said no'])]];
     }
 
     $email = is_string($query['email'] ?? null) ? $query['email'] : 'sso-user@example.com';
@@ -458,8 +458,7 @@ function relay(string $method, string $label, string $path, array $headers, stri
     }
 
     return match (true) {
-        $method === 'POST' && in_array($path, ['/push/register', '/push/send'], true),
-        $method === 'POST' && str_starts_with($path, '/push/delete/') => [200, 'text/plain', ''],
+        $method === 'POST' && in_array($path, ['/push/register', '/push/send', '/push/delete'], true) => [200, 'text/plain', ''],
         default => [404, 'text/plain', 'Not found'],
     };
 }

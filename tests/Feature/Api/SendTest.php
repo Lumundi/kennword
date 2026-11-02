@@ -200,6 +200,31 @@ class SendTest extends TestCase
             ->assertStatus(400)->assertJsonPath('message', 'Send storage limit reached! Delete some sends to free up space');
     }
 
+    /**
+     * Vaultwarden acb574b7: only `size` counts, not `Size`; and like any
+     * derived struct, the data may hold it in a sequence.
+     */
+    public function test_the_storage_limit_counts_the_size_field(): void
+    {
+        foreach (['{"Size":1024}', '{"size":"1000","Size":24}', '[24]', '[24, 1]', '{"size":1.5}', '{"size":"x"}'] as $data) {
+            $send = Send::new(Send::TYPE_FILE, '2.old', $data, '2.k', Dates::now()->modify('+1 day'));
+            $send->user_uuid = $this->user->uuid;
+            $send->save();
+        }
+
+        $this->assertSame(1024, Send::sizeByUser($this->user->uuid));
+        $this->changeVaultwardenEnvironment(['USER_SEND_LIMIT' => '1']);
+        $this->postJson('/api/sends/file/v2', $this->file('2.f', 1), $this->auth)
+            ->assertStatus(400)->assertJsonPath('message', 'Send storage limit reached! Delete some sends to free up space');
+    }
+
+    public function test_file_data_must_be_an_object(): void
+    {
+        $this->postJson('/api/sends/file/v2', [...$this->file('2.f', 1), 'file' => ['2.f']], $this->auth)
+            ->assertStatus(400)->assertJsonPath('message', 'Invalid Send file data');
+        $this->assertSame(0, Send::query()->count());
+    }
+
     public function test_file_uploads_can_be_disabled(): void
     {
         $this->changeVaultwardenEnvironment(['USER_SEND_LIMIT' => '0']);

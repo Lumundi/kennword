@@ -4,6 +4,7 @@ namespace Tests\Feature\Api;
 
 use App\Models\SsoUser;
 use App\Models\User;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Testing\TestResponse;
 use RuntimeException;
 use Symfony\Component\HttpFoundation\Response;
@@ -68,6 +69,27 @@ class SsoProviderTest extends TestCase
         // Without a status at all, the setting allows the link.
         $this->login($this->ssoCode(['email' => 'victim@example.com', 'verified' => 'unknown']))->assertStatus(200);
         $this->assertNotNull((SsoUser::findByMail('victim@example.com') ?? [null, null])[1]);
+    }
+
+    /**
+     * Vaultwarden be5d3ad9 and 6ed6921c: only SSO_DEBUG_TOKENS logs the
+     * provider's tokens, and its errors are escaped.
+     */
+    public function test_the_log_keeps_the_tokens_and_the_errors_are_escaped(): void
+    {
+        $log = Log::spy();
+        $this->login($this->ssoCode(['email' => 'logged@example.com', 'name' => 'logged']))->assertStatus(200);
+        $identifier = 'https://'.self::$servicesHost.'/oidc/sub-'.substr(sha1('logged@example.com'), 0, 12);
+        $log->shouldHaveReceived('debug')->with("Authenticated user {$identifier}");
+
+        $this->changeVaultwardenEnvironment(['SSO_DEBUG_TOKENS' => 'true']);
+        $this->login($this->ssoCode(['email' => 'logged@example.com', 'name' => 'logged']))->assertStatus(200);
+        $log->shouldHaveReceived('debug')->withArgs(static fn (string $message): bool => str_starts_with($message, 'Authenticated user OIDCAuthenticatedUser { refresh_token: Some("')
+            && str_ends_with($message, "\", expires_in: Some(3600s), identifier: OIDCIdentifier(\"{$identifier}\"), email: \"logged@example.com\", "
+                .'email_verified: Some(true), user_name: Some("logged") }'));
+
+        $this->login($this->ssoCode(['deny' => '1', 'deny_description' => "The user's \"no\"\n"]))
+            ->assertStatus(400)->assertJsonPath('message', 'SSO authorization failed: access_denied, The user\\\'s \\"no\\"\\n');
     }
 
     /**

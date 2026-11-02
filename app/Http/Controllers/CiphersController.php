@@ -32,9 +32,11 @@ use App\Models\Membership;
 use App\Models\OrgCollection;
 use App\Models\OrgPolicy;
 use App\Models\Send;
+use App\Models\User;
 use App\Notifications\Notify;
 use App\Support\CheckedInt;
 use App\Support\Dates;
+use App\Support\EscapeDebug;
 use App\Support\UpdateType;
 use App\Support\Uuid;
 use DateTimeImmutable;
@@ -643,11 +645,25 @@ final readonly class CiphersController
         // no ids as no filter, so an empty list moves every cipher.
         $accessible = Cipher::findByUserVisible($userUuid, $ids);
         $singleCipher = null;
+        $failure = null;
         foreach ($accessible as $cipher) {
-            $cipher->moveToFolder($folderId, $userUuid);
+            try {
+                $cipher->moveToFolderWithoutRevisionUpdate($folderId, $userUuid);
+            } catch (ApiError $error) {
+                $failure = $error;
+                break;
+            }
             if (count($ids) === 1) {
                 $singleCipher = $cipher;
             }
+        }
+        // Update the revision once for the whole batch. Also when a move failed halfway,
+        // since the ciphers moved before it are already changed.
+        if ($accessible->isNotEmpty()) {
+            User::updateUuidRevision($userUuid);
+        }
+        if ($failure !== null) {
+            throw $failure;
         }
 
         if ($singleCipher !== null) {
@@ -813,7 +829,7 @@ final readonly class CiphersController
         if ($updateType !== UpdateType::None && $data->lastKnownRevisionDate !== null) {
             $known = Dates::parseNaive($data->lastKnownRevisionDate);
             if ($known === null) {
-                logger()->warning("Error parsing LastKnownRevisionDate '{$data->lastKnownRevisionDate}'");
+                logger()->warning("Error parsing LastKnownRevisionDate '".EscapeDebug::of($data->lastKnownRevisionDate)."'");
             } else {
                 $difference = ((int) $cipher->updated_at->format('Uu')) - ((int) $known->format('Uu'));
                 if (intdiv($difference, 1_000_000) > 1) {
@@ -857,7 +873,7 @@ final readonly class CiphersController
             $saved = Attachment::query()->where('id', $id)->first();
             if ($saved === null) {
                 // Removed by another client; upstream ignores it too.
-                logger()->warning("Attachment {$id} doesn't exist");
+                logger()->warning('Attachment '.EscapeDebug::of($id)." doesn't exist");
 
                 continue;
             }
@@ -902,7 +918,7 @@ final readonly class CiphersController
         } else {
             $archivedAt = Dates::parseNaive($data->archivedDate);
             if ($archivedAt === null) {
-                logger()->warning("Error parsing ArchivedDate '{$data->archivedDate}'");
+                logger()->warning("Error parsing ArchivedDate '".EscapeDebug::of($data->archivedDate)."'");
             } else {
                 Archive::store($headers->user->uuid, $cipher->uuid, $archivedAt);
             }

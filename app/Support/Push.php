@@ -135,12 +135,21 @@ final class Push
         if (! $config->bool('push_enabled') || $pushUuid === null) {
             return;
         }
-        $token = self::authApiToken();
+        $data = ['id' => $pushUuid];
 
+        $token = self::authApiToken();
+        $url = $config->string('push_relay_uri').'/push/delete';
         try {
-            self::request('POST', $config->string('push_relay_uri')."/push/delete/{$pushUuid}", ['Authorization' => "Bearer {$token}"]);
+            [$status] = self::request('POST', $url, [
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json',
+                'Authorization' => "Bearer {$token}",
+            ], Json::encode($data));
         } catch (RuntimeException $error) {
-            throw ApiError::message("An error occurred during device unregistration: {$error->getMessage()}");
+            throw ApiError::message('Req', logMessage: $error->getMessage());
+        }
+        if ($status >= 400) {
+            throw ApiError::message('An error occurred during device unregistration: '.self::statusError($status, $url));
         }
     }
 
@@ -184,20 +193,29 @@ final class Push
     public static function logout(User $user, ?Device $actingDevice): void
     {
         if (Device::checkUserHasPushDevice($user->uuid)) {
-            self::spawn([
-                'userId' => $user->uuid,
-                'organizationId' => null,
-                'deviceId' => $actingDevice?->push_uuid,
-                'identifier' => $actingDevice?->uuid,
-                'type' => UpdateType::LogOut->value,
-                'payload' => [
-                    'userId' => $user->uuid,
-                    'date' => Dates::format($user->updated_at),
-                ],
-                'clientType' => null,
-                'installationId' => null,
-            ]);
+            self::logoutToRelay($user, $actingDevice);
         }
+    }
+
+    /**
+     * push_logout_to_relay: without checking for push devices first, which
+     * are gone once the user is deleted.
+     */
+    public static function logoutToRelay(User $user, ?Device $actingDevice): void
+    {
+        self::spawn([
+            'userId' => $user->uuid,
+            'organizationId' => null,
+            'deviceId' => $actingDevice?->push_uuid,
+            'identifier' => $actingDevice?->uuid,
+            'type' => UpdateType::LogOut->value,
+            'payload' => [
+                'userId' => $user->uuid,
+                'date' => Dates::format($user->updated_at),
+            ],
+            'clientType' => null,
+            'installationId' => null,
+        ]);
     }
 
     /**

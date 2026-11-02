@@ -7,6 +7,7 @@ use App\Auth\Jwt;
 use App\Auth\LoginClaims;
 use App\Models\Device;
 use App\Models\Event;
+use App\Models\Membership;
 use App\Models\User;
 use App\Support\Random;
 use Tests\Concerns\UsesVaultwardenDatabase;
@@ -61,5 +62,58 @@ class EventTest extends TestCase
         $page = $this->get("/api/ciphers/{$cipher}/events?{$range}", $auth)->assertJsonCount(30, 'data');
         $this->assertNotNull($page->json('continuationToken'));
         $this->assertSame(0, Event::query()->where('event_type', 1100)->where('device_type', 8)->whereNull('act_user_uuid')->count());
+
+        // Vaultwarden 79ee29d5: HTTP auth released (1133), not what follows.
+        $this->call('POST', '/events/collect', server: ['CONTENT_TYPE' => 'application/json', 'HTTP_AUTHORIZATION' => $auth['Authorization']],
+            content: (string) json_encode([['type' => 1133, 'cipherId' => $cipher, 'date' => $date], ['type' => 1134, 'cipherId' => $cipher, 'date' => $date]]))->assertStatus(200);
+        $this->assertSame([1, 0], [Event::query()->where('event_type', Event::CIPHER_CLIENT_HTTP_AUTH_RELEASED)->count(), Event::query()->where('event_type', 1134)->count()]);
+    }
+
+    public function test_revocations_by_policy_have_events_of_their_own(): void
+    {
+        $this->useDatabase('sqlite');
+        [$owner, $auth] = $this->account('owner@example.com');
+        [$member, $memberAuth] = $this->account('member@example.com');
+        $create = fn (array $session): string => $this->string($this->postJson('/api/organizations', ['billingEmail' => 'billing@example.com', 'collectionName' => '2.first',
+            'key' => '4.owner-key', 'name' => '2.org', 'planType' => 0], $session)->assertStatus(200)->json('id'));
+        $create($memberAuth);
+        $twoFactorOrg = $create($auth);
+        $singleOrg = $create($auth);
+        foreach ([$twoFactorOrg, $singleOrg] as $org) {
+            $this->postJson("/api/organizations/{$org}/users/invite", ['emails' => ['member@example.com'], 'groups' => [], 'type' => 2], $auth)->assertStatus(200);
+            $memberId = $this->string(Membership::query()->where('org_uuid', $org)->where('user_uuid', $member->uuid)->value('uuid'));
+            $this->postJson("/api/organizations/{$org}/users/{$memberId}/confirm", ['key' => '4.member-key'], $auth)->assertStatus(200);
+        }
+
+        $this->putJson("/api/organizations/{$twoFactorOrg}/policies/0", ['policy' => ['enabled' => true, 'data' => null]], $auth)->assertStatus(200);
+        $this->putJson("/api/organizations/{$singleOrg}/policies/3", ['policy' => ['enabled' => true, 'data' => null]], $auth)->assertStatus(200);
+
+        $types = fn (string $org): array => Event::query()->where('org_uuid', $org)->where('act_user_uuid', $owner->uuid)->pluck('event_type')->all();
+        $this->assertContains(Event::ORGANIZATION_USER_REVOKED_TWO_FACTOR_NON_COMPLIANCE, $types($twoFactorOrg));
+        $this->assertContains(Event::ORGANIZATION_USER_REVOKED_SINGLE_ORGANIZATION_NON_COMPLIANCE, $types($singleOrg));
+        $this->assertNotContains(Event::ORGANIZATION_USER_REVOKED, [...$types($twoFactorOrg), ...$types($singleOrg)]);
+        $this->assertNotContains(Event::ORGANIZATION_USER_REMOVED, $types($singleOrg));
+    }
+
+    /**
+     * @return array{User, array<string, string>}
+     */
+    private function account(string $email): array
+    {
+        $user = User::new($email);
+        $user->setPassword('hash', 'user-key', false, null);
+        $user->save();
+        $device = Device::new(Random::uuid(), $user->uuid, 'cli', 8);
+        $device->save();
+        $jwt = $this->app->make(Jwt::class);
+
+        return [$user, ['Authorization' => 'Bearer '.LoginClaims::default($device, $user, AuthMethod::Password, 'cli', $jwt)->token($jwt)]];
+    }
+
+    private function string(mixed $value): string
+    {
+        $this->assertIsString($value);
+
+        return $value;
     }
 }

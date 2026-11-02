@@ -47,6 +47,18 @@ class EventTest extends DifferentialTestCase
                 'scope' => 'api offline_access', 'client_id' => 'web', 'deviceType' => '10', 'deviceIdentifier' => 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee', 'deviceName' => 'firefox'],
                 ['Device-Type' => '10']);
 
+            // Vaultwarden 79ee29d5: revocations by a policy have events of their own.
+            [$other] = CipherTest::session($server, 'events-other@example.com');
+            $server->json('POST', '/api/organizations', [...OrganizationTest::org(), 'name' => '2.own'], $other);
+            $twoFactorOrg = $server->json('POST', '/api/organizations', OrganizationTest::org(), $owner)->jsonString('id');
+            $singleOrg = $server->json('POST', '/api/organizations', OrganizationTest::org(), $owner)->jsonString('id');
+            OrganizationTest::addMember($server, $owner, $twoFactorOrg, 'events-other@example.com');
+            OrganizationTest::addMember($server, $owner, $singleOrg, 'events-other@example.com');
+            $server->json('PUT', "/api/organizations/{$twoFactorOrg}/policies/0", ['policy' => ['enabled' => true, 'data' => null]], $owner);
+            $server->json('PUT', "/api/organizations/{$singleOrg}/policies/3", ['policy' => ['enabled' => true, 'data' => null]], $owner);
+            $steps['two-factor policy events'] = $server->send('GET', "/api/organizations/{$twoFactorOrg}/events?{$range}", $owner);
+            $steps['single organization policy events'] = $server->send('GET', "/api/organizations/{$singleOrg}/events?{$range}", $owner);
+
             $steps['organization events'] = $server->send('GET', "/api/organizations/{$org}/events?{$range}", $owner);
             $steps['member events'] = $server->send('GET', "/api/organizations/{$org}/users/{$memberId}/events?{$range}", $owner);
             $steps['cipher events'] = $server->send('GET', "/api/ciphers/{$cipher}/events?{$range}", $owner);
@@ -69,6 +81,8 @@ class EventTest extends DifferentialTestCase
                 ['type' => 1522, 'organizationId' => $org, 'date' => '2099-01-01T00:00:06.123456Z'],
                 ['type' => 1500, 'organizationId' => $org, 'date' => '2099-01-01T00:00:07.000Z'],
                 ['type' => 1100, 'cipherId' => $cipher, 'date' => '2099-01-01T00:00:08.000Z'],
+                ['type' => 1133, 'cipherId' => $cipher, 'date' => '2099-01-01T00:00:09.000Z'],
+                ['type' => 1134, 'cipherId' => $cipher, 'date' => '2099-01-01T00:00:10.000Z'],
             ], $member);
             $steps['collect with a bad date'] = $server->json('POST', '/events/collect', [['type' => 1107, 'cipherId' => $cipher, 'date' => 'now']], $member);
             $steps['collect without a type'] = $server->json('POST', '/events/collect', [['date' => $now]], $member);

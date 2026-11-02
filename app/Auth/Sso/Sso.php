@@ -107,7 +107,7 @@ final readonly class Sso
         $error = $auth->codeResponseError();
         if ($error !== null) {
             $auth->deleteAuth();
-            throw ApiError::message("SSO authorization failed: {$error[0]}, ".($error[1] ?? ''));
+            throw ApiError::message('SSO authorization failed: '.EscapeDebug::of($error[0]).', '.EscapeDebug::of($error[1] ?? ''));
         }
         if ($auth->code_response === null) {
             $auth->deleteAuth();
@@ -138,6 +138,7 @@ final readonly class Sso
             $userName,
         );
 
+        logger()->debug('Authenticated user '.($this->config->bool('sso_debug_tokens') ? $authenticated->debug() : $authenticated->identifier));
         $auth->auth_response = $authenticated->toJson();
         $auth->updated_at = Dates::now();
         $auth->save();

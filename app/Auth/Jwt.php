@@ -52,6 +52,11 @@ final readonly class Jwt
         'org_id' => 'string', 'member_id' => 'string', 'invited_by_email' => '?string'];
 
     /**
+     * The fields of RegisterVerifyClaims.
+     */
+    public const array REGISTER_VERIFY_CLAIMS = ['nbf' => 'int', 'exp' => 'int', 'iss' => 'string', 'sub' => 'string', 'name' => '?string', 'verified' => 'bool'];
+
+    /**
      * The fields of EmergencyAccessInviteJwtClaims.
      */
     public const array EMERGENCY_ACCESS_INVITE_CLAIMS = ['nbf' => 'int', 'exp' => 'int', 'iss' => 'string', 'sub' => 'string', 'email' => 'string',

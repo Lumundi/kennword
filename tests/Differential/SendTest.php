@@ -159,7 +159,10 @@ class SendTest extends DifferentialTestCase
             $steps['negative length'] = $server->json('POST', '/api/sends/file/v2', self::file('2.f', -1), $auth);
             $steps['too long'] = $server->json('POST', '/api/sends/file/v2', self::file('2.f', 550_502_401), $auth);
             $steps['length a float'] = $server->json('POST', '/api/sends/file/v2', self::file('2.f', 1.5), $auth);
+            // Vaultwarden acb574b7: file data that is no object is refused.
             $steps['file a string'] = $server->json('POST', '/api/sends/file/v2', [...self::file('2.f', 1), 'file' => '2.just-a-string'], $auth);
+            $steps['file a list'] = $server->json('POST', '/api/sends/file/v2', [...self::file('2.f', 1), 'file' => ['2.f']], $auth);
+            $steps['sends after refused files'] = $server->send('GET', '/api/sends', $auth);
 
             $steps['delete'] = $server->send('DELETE', "/api/sends/{$id}", $auth);
             $steps['download after the delete'] = $server->send('GET', "{$url}?{$query}");

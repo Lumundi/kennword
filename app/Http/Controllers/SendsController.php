@@ -139,10 +139,10 @@ final readonly class SendsController
 
         $fileId = Send::generateFileId();
         [, $fileData] = JsonValue::decode($send->data);
-        $fileData = JsonValue::toArrays($fileData);
-        if (is_array($fileData) && ! array_is_list($fileData) || $fileData instanceof stdClass) {
-            $fileData = [...(array) $fileData, 'id' => $fileId, 'size' => $fileLength, 'sizeName' => Attachment::displaySize($fileLength)];
+        if (! $fileData instanceof stdClass) {
+            throw ApiError::message('Invalid Send file data');
         }
+        $fileData = [...(array) JsonValue::toArrays($fileData), 'id' => $fileId, 'size' => $fileLength, 'sizeName' => Attachment::displaySize($fileLength)];
         $send->data = Json::encode(Json::sorted($fileData));
         $send->save();
 
