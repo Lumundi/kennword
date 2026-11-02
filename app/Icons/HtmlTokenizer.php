@@ -3,7 +3,7 @@
 namespace App\Icons;
 
 /**
- * The HTML tokenizer of html5gum 0.8.4 (src/machine.rs and its helpers),
+ * The HTML tokenizer of html5gum 0.9.0 (src/machine.rs and its helpers),
  * driving the FaviconEmitter of src/api/icons.rs over raw bytes, the way
  * get_favicons_node reads a page.
  *
@@ -435,7 +435,7 @@ final class HtmlTokenizer
         if (self::isAlpha($c)) {
             $this->emitter->initEndTag();
 
-            return $this->reconsumeIn($c, 'tagName');
+            return $this->inline($this->reconsumeIn($c, 'tagName'));
         }
 
         return match ($c) {
@@ -770,8 +770,9 @@ final class HtmlTokenizer
             if ($xs === null) {
                 return $this->reconsumeIn(null, 'afterAttributeName');
             }
+            // In the same step since 0.9.0: before the emitter hands out a base tag that init_attribute flagged.
             if (self::isWhitespace($xs) || $xs === '/' || $xs === '>') {
-                return $this->reconsumeIn($xs, 'afterAttributeName');
+                return $this->inline($this->reconsumeIn($xs, 'afterAttributeName'));
             }
             if ($xs === '=') {
                 return $this->inline('beforeAttributeValue');

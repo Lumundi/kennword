@@ -3,9 +3,10 @@
 namespace App\Icons;
 
 /**
- * The named character references of HTML (WHATWG entities.json), as html5gum 0.8.4
- * embeds them in src/entities.rs: the name without the ampersand, with or without
- * the semicolon, and the characters it stands for.
+ * The named character references of HTML (WHATWG entities.json), as html5gum 0.9.0
+ * embeds them in src/entities.rs (the same set as 0.8.4), here keyed by the name
+ * without the ampersand, with or without the semicolon, with the characters it
+ * stands for.
  */
 final class HtmlEntities
 {
