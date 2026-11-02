@@ -83,6 +83,28 @@ class SsoTest extends TestCase
         $this->assertFalse(Jws::parse($token)?->verify('ES512', $jwk) ?? true);
     }
 
+    /**
+     * openidconnect puts x and y behind 0x04 without checking them one by one,
+     * so only the length of the point counts.
+     */
+    public function test_ec_coordinates_count_together(): void
+    {
+        $key = openssl_pkey_new(['private_key_type' => OPENSSL_KEYTYPE_EC, 'curve_name' => 'prime256v1']);
+        $this->assertInstanceOf(OpenSSLAsymmetricKey::class, $key);
+        [$token, $jwk] = $this->signed('ES256', $key, 'sha256');
+        $jws = Jws::parse($token);
+        $this->assertNotNull($jws);
+        $this->assertIsString($jwk->x);
+        $this->assertIsString($jwk->y);
+        $point = (string) Jws::base64UrlDecode($jwk->x).(string) Jws::base64UrlDecode($jwk->y);
+
+        $split = static fn (int $at): object => (object) [...(array) $jwk, 'x' => rtrim(strtr(base64_encode(substr($point, 0, $at)), '+/', '-_'), '='),
+            'y' => rtrim(strtr(base64_encode(substr($point, $at)), '+/', '-_'), '=')];
+        $this->assertTrue($jws->verify('ES256', $split(31)));
+        $this->assertTrue($jws->verify('ES256', $split(0)));
+        $this->assertFalse($jws->verify('ES256', (object) [...(array) $jwk, 'y' => rtrim(strtr(base64_encode(substr($point, 32, 31)), '+/', '-_'), '=')]));
+    }
+
     public function test_shared_secret_and_eddsa_signatures(): void
     {
         $input = $this->base64('{"alg":"HS256"}').'.'.$this->base64('{"sub":"1"}');

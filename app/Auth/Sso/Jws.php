@@ -234,9 +234,10 @@ final class Jws
         $expected = ['ES256' => 'P-256', 'ES384' => 'P-384'][$algorithm] ?? null;
         $x = is_string($key->x ?? null) ? self::base64UrlDecode($key->x) : null;
         $y = is_string($key->y ?? null) ? self::base64UrlDecode($key->y) : null;
-        // VerifyingKey::from_sec1_bytes takes coordinates of the curve's size only.
+        // openidconnect puts x and y behind 0x04 as they are; VerifyingKey::from_sec1_bytes
+        // only takes a point as long as both coordinates of the curve together.
         if ($expected === null || $curve !== $expected || $x === null || $y === null
-            || strlen($x) !== self::CURVES[$curve][1] || strlen($y) !== self::CURVES[$curve][1]) {
+            || strlen($x) + strlen($y) !== 2 * self::CURVES[$curve][1]) {
             return null;
         }
         $algorithmId = self::der(0x30, (hex2bin('06072a8648ce3d0201') ?: '').(hex2bin(self::CURVES[$curve][0]) ?: ''));
