@@ -50,8 +50,8 @@ final readonly class PhpReleases implements Source
                 body: sprintf(
                     "PHP [%s](https://www.php.net/ChangeLog-%d.php#%s) of %s fixes security issues.\n\n"
                     ."- CI takes it by itself: setup-php installs the newest PHP of the branch.\n"
-                    ."- Update PHP wherever Vaultwarphpen runs, for example Herd and the servers.\n"
-                    .'- If a fix matters to Vaultwarphpen in particular (OpenSSL, sodium, PDO, the URI extension), consider requiring it in `composer.json`.',
+                    ."- Update PHP wherever Kennword runs, for example Herd and the servers.\n"
+                    .'- If a fix matters to Kennword in particular (OpenSSL, sodium, PDO, the URI extension), consider requiring it in `composer.json`.',
                     $version, (int) $version, $version, Matrix::string($release['date'] ?? ''),
                 ),
                 labels: ['security'],

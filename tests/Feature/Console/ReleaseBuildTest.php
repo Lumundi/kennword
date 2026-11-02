@@ -85,27 +85,27 @@ class ReleaseBuildTest extends TestCase
     public function test_it_packs_the_checkout_with_its_dependencies_and_the_web_vault(): void
     {
         $this->command('release:build', ['ref' => 'v1.0.0', '--output' => $this->output, '--composer' => '/usr/bin/composer'])
-            ->expectsOutputToContain('Built vaultwarphpen-1.0.0 from '.self::COMMIT)
+            ->expectsOutputToContain('Built kennword-1.0.0 from '.self::COMMIT)
             ->assertSuccessful();
 
         $this->assertSame([
             '.', '..',
-            'vaultwarphpen-1.0.0.sha256', 'vaultwarphpen-1.0.0.tar.gz', 'vaultwarphpen-1.0.0.zip',
+            'kennword-1.0.0.sha256', 'kennword-1.0.0.tar.gz', 'kennword-1.0.0.zip',
             'web-vault-2026.10.1-source-bw_web_builds.tar.gz', 'web-vault-2026.10.1-source-vw_web_builds.tar.gz',
         ], scandir($this->output));
         $sums = '';
-        foreach (['vaultwarphpen-1.0.0.tar.gz', 'vaultwarphpen-1.0.0.zip', ...array_values(self::SOURCES)] as $file) {
+        foreach (['kennword-1.0.0.tar.gz', 'kennword-1.0.0.zip', ...array_values(self::SOURCES)] as $file) {
             $sums .= hash_file('sha256', "{$this->output}/{$file}")."  {$file}\n";
         }
-        $this->assertSame($sums, file_get_contents("{$this->output}/vaultwarphpen-1.0.0.sha256"));
+        $this->assertSame($sums, file_get_contents("{$this->output}/kennword-1.0.0.sha256"));
         foreach (self::SOURCES as $url => $file) {
             $this->assertSame("\x1f\x8b{$url}", file_get_contents("{$this->output}/{$file}"));
         }
 
         // Phar names the entries below the real path of the archive.
-        $prefix = 'phar://'.realpath("{$this->output}/vaultwarphpen-1.0.0.tar.gz").'/vaultwarphpen-1.0.0/';
+        $prefix = 'phar://'.realpath("{$this->output}/kennword-1.0.0.tar.gz").'/kennword-1.0.0/';
         $files = [];
-        foreach (new RecursiveIteratorIterator(new PharData("{$this->output}/vaultwarphpen-1.0.0.tar.gz")) as $file) {
+        foreach (new RecursiveIteratorIterator(new PharData("{$this->output}/kennword-1.0.0.tar.gz")) as $file) {
             $this->assertInstanceOf(PharFileInfo::class, $file);
             $files[] = substr($file->getPathname(), strlen($prefix));
         }
@@ -128,7 +128,7 @@ class ReleaseBuildTest extends TestCase
 
         $this->command('release:build', ['--output' => $this->output, '--composer' => '/usr/bin/composer'])->assertSuccessful();
 
-        $this->assertFileExists("{$this->output}/vaultwarphpen-01234567.tar.gz");
+        $this->assertFileExists("{$this->output}/kennword-01234567.tar.gz");
     }
 
     public function test_it_fails_without_the_source_of_the_web_vault(): void

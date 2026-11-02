@@ -105,12 +105,12 @@ for connection in "$@"; do
         wait_for "${work}/${connection}/vaultwarden-$1.log"
     }
     # php -S rather than artisan serve, which drops most environment variables.
-    vaultwarphpen() {
+    kennword() {
         (cd public && CACHE_PATH="${work}/${connection}/cache" exec php -d upload_max_filesize=525M -d post_max_size=0 -S "127.0.0.1:${port}" \
-            ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php) > "${work}/${connection}/vaultwarphpen.log" 2>&1 &
+            ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php) > "${work}/${connection}/kennword.log" 2>&1 &
         pid=$!
         pids+=("${pid}")
-        wait_for "${work}/${connection}/vaultwarphpen.log"
+        wait_for "${work}/${connection}/kennword.log"
     }
 
     # Each step needs the ones before; the first that fails ends the run on this database.
@@ -122,13 +122,13 @@ for connection in "$@"; do
         php artisan vaultwarden:check --no-ansi || { fail "${connection}: vaultwarden:check found problems in Vaultwarden's installation."; return; }
         php artisan vaultwarden:migrate --no-ansi || { fail "${connection}: vaultwarden:migrate failed on Vaultwarden's installation."; return; }
 
-        vaultwarphpen || { fail "${connection}: Vaultwarphpen did not start."; return; }
+        kennword || { fail "${connection}: Kennword did not start."; return; }
         phase move || { fail "${connection}: the installation did not move over intact."; return; }
         stop "${pid}"
 
-        php artisan vaultwarden:check --no-ansi || { fail "${connection}: vaultwarden:check found problems in what Vaultwarphpen left."; return; }
-        vaultwarden back || { fail "${connection}: Vaultwarden did not start on what Vaultwarphpen left."; return; }
-        phase back || { fail "${connection}: Vaultwarden did not read what Vaultwarphpen left."; return; }
+        php artisan vaultwarden:check --no-ansi || { fail "${connection}: vaultwarden:check found problems in what Kennword left."; return; }
+        vaultwarden back || { fail "${connection}: Vaultwarden did not start on what Kennword left."; return; }
+        phase back || { fail "${connection}: Vaultwarden did not read what Kennword left."; return; }
         stop "${pid}"
     }
     pid=""

@@ -25,7 +25,7 @@ class ArchiveWriterTest extends TestCase
         $this->folder = sys_get_temp_dir().'/vw-archive-'.bin2hex(random_bytes(6));
         foreach ([
             'artisan' => "#!/usr/bin/env php\n<?php\n",
-            'README.md' => "# Vaultwarphpen\n",
+            'README.md' => "# Kennword\n",
             'storage/logs/.gitignore' => "*\n!.gitignore\n",
             'data/empty' => '',
             self::LONG_PATH => str_repeat('<div>ascii</div>', 4000),
@@ -45,7 +45,7 @@ class ArchiveWriterTest extends TestCase
 
     public function test_tar_and_unzip_unpack_the_folder_with_normal_modes_and_one_time(): void
     {
-        $writer = new ArchiveWriter($this->folder, 'vaultwarphpen-1.0.0', self::TIMESTAMP);
+        $writer = new ArchiveWriter($this->folder, 'kennword-1.0.0', self::TIMESTAMP);
         $writer->writeTarGz("{$this->folder}.tar.gz");
         $writer->writeZip("{$this->folder}.zip");
 
@@ -55,7 +55,7 @@ class ArchiveWriterTest extends TestCase
             exec(sprintf($command, escapeshellarg("{$this->folder}.".($format === 'tar' ? 'tar.gz' : 'zip')), escapeshellarg($target)), result_code: $status);
             $this->assertSame(0, $status, "{$format} cannot unpack the archive.");
 
-            $root = "{$target}/vaultwarphpen-1.0.0";
+            $root = "{$target}/kennword-1.0.0";
             $this->assertSame(['README.md', 'artisan', 'bootstrap', 'data', 'storage', 'vendor'], array_values(array_diff((array) scandir($root), ['.', '..'])), $format);
             $this->assertDirectoryExists("{$root}/bootstrap/cache", $format);
             $this->assertSame('', file_get_contents("{$root}/data/empty"), $format);
@@ -72,7 +72,7 @@ class ArchiveWriterTest extends TestCase
 
     public function test_the_same_files_give_the_same_bytes(): void
     {
-        $writer = new ArchiveWriter($this->folder, 'vaultwarphpen-1.0.0', self::TIMESTAMP);
+        $writer = new ArchiveWriter($this->folder, 'kennword-1.0.0', self::TIMESTAMP);
         $writer->writeTarGz("{$this->folder}-1.tar.gz");
         $writer->writeZip("{$this->folder}-1.zip");
 
@@ -92,7 +92,7 @@ class ArchiveWriterTest extends TestCase
 
     public function test_the_gzip_header_names_no_time_and_no_host(): void
     {
-        (new ArchiveWriter($this->folder, 'vaultwarphpen-1.0.0', self::TIMESTAMP))->writeTarGz("{$this->folder}.tar.gz");
+        (new ArchiveWriter($this->folder, 'kennword-1.0.0', self::TIMESTAMP))->writeTarGz("{$this->folder}.tar.gz");
 
         $this->assertSame("\x1f\x8b\x08\x00\x00\x00\x00\x00\x02\x03", substr((string) file_get_contents("{$this->folder}.tar.gz"), 0, 10));
         unlink("{$this->folder}.tar.gz");
@@ -100,10 +100,10 @@ class ArchiveWriterTest extends TestCase
 
     public function test_entries_are_sorted_by_path_below_the_top_folder(): void
     {
-        $names = array_column((new ArchiveWriter($this->folder, 'vaultwarphpen-1.0.0', self::TIMESTAMP))->entries(), 'name');
+        $names = array_column((new ArchiveWriter($this->folder, 'kennword-1.0.0', self::TIMESTAMP))->entries(), 'name');
 
-        $this->assertSame('vaultwarphpen-1.0.0/', $names[0]);
-        $this->assertSame('vaultwarphpen-1.0.0/README.md', $names[1]);
+        $this->assertSame('kennword-1.0.0/', $names[0]);
+        $this->assertSame('kennword-1.0.0/README.md', $names[1]);
         $sorted = $names;
         sort($sorted, SORT_STRING);
         $this->assertSame($sorted, $names);
@@ -115,6 +115,6 @@ class ArchiveWriterTest extends TestCase
 
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('link.md is a symbolic link');
-        (new ArchiveWriter($this->folder, 'vaultwarphpen-1.0.0', self::TIMESTAMP))->entries();
+        (new ArchiveWriter($this->folder, 'kennword-1.0.0', self::TIMESTAMP))->entries();
     }
 }

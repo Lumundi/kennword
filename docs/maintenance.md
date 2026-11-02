@@ -1,7 +1,7 @@
 # Maintenance: advisories and upstream changes
 
-How Vaultwarphpen notices security advisories and changes upstream, what happens on its own and what
-waits for a maintainer. Vaultwarphpen is only as safe as its port of Vaultwarden's fixes and the
+How Kennword notices security advisories and changes upstream, what happens on its own and what
+waits for a maintainer. Kennword is only as safe as its port of Vaultwarden's fixes and the
 packages it runs on, so both are watched, not left to chance.
 
 ## What is watched
@@ -38,7 +38,7 @@ One GitHub issue per finding, labelled `watch` and one of:
 
 - `upstream`: a change in Vaultwarden to port
 - `upstream-security`: a Vaultwarden release with security fixes, or a published advisory
-- `security`: an advisory for something Vaultwarphpen depends on
+- `security`: an advisory for something Kennword depends on
 - `dependencies`: dependency updates (Dependabot uses it too)
 
 A hidden comment at the end of each issue holds the finding's key. The issues are the watch's memory:
@@ -61,7 +61,7 @@ commit hashes and titles. It leaves out who wrote a commit or reported an adviso
 `GITHUB_TOKEN`.
 
 Issues in this repository are public. The watch's issues only repeat what is public already and never
-say that Vaultwarphpen is vulnerable. If the check an issue asks for shows that it is, the fix goes the
+say that Kennword is vulnerable. If the check an issue asks for shows that it is, the fix goes the
 private way [SECURITY.md](../SECURITY.md) describes, and the issue is closed without details.
 
 ## What happens on its own, and what waits
@@ -82,7 +82,7 @@ Always waits for a maintainer:
 - publishing advisories of our own, and releases
 - turning a schedule on or off
 
-Nothing is merged automatically, not even patches: Vaultwarphpen's worth is behaving exactly like
+Nothing is merged automatically, not even patches: Kennword's worth is behaving exactly like
 Vaultwarden, and a patch of a library can change an answer. When an update adds or removes a package,
 `NoticeTest` fails until NOTICE.md lists it; such a pull request needs that change by hand. A release
 built from a `composer.lock` with an advisory needs a new release.

@@ -58,7 +58,7 @@ final readonly class CoreController
 
     /**
      * GET /api/config: what the clients learn of the server. The server is
-     * named Vaultwarphpen, so that users find the source and report bugs
+     * named Kennword, so that users find the source and report bugs
      * here (AGPL section 13); the rest is as Vaultwarden says it.
      */
     public function config(Config $config): Response
@@ -71,7 +71,7 @@ final readonly class CoreController
             // The clients compare it with Bitwarden server versions.
             'version' => '2026.6.0',
             'gitHash' => null,
-            'server' => ['name' => 'Vaultwarphpen', 'url' => 'https://github.com/christianrudde/vaultwarphpen'],
+            'server' => ['name' => 'Kennword', 'url' => 'https://github.com/Lumundi/kennword'],
             'settings' => [
                 'disableUserRegistration' => $config->isSignupDisabled(),
                 'suppressOnboardingInterstitials' => $config->bool('client_suppress_onboarding'),

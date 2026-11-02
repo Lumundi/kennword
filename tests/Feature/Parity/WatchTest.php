@@ -293,7 +293,7 @@ class WatchTest extends TestCase
         $writes = array_values(array_filter($requests, static fn (array $request): bool => $request[0] !== 'GET'));
         $this->assertEquals([
             ['POST', '/repos/owner/repo/labels', ['name' => 'upstream-security', 'color' => 'b60205', 'description' => 'A security fix in Vaultwarden to port or verify']],
-            ['POST', '/repos/owner/repo/labels', ['name' => 'security', 'color' => 'd93f0b', 'description' => 'A security advisory for something Vaultwarphpen depends on']],
+            ['POST', '/repos/owner/repo/labels', ['name' => 'security', 'color' => 'd93f0b', 'description' => 'A security advisory for something Kennword depends on']],
             ['POST', '/repos/owner/repo/labels', ['name' => 'dependencies', 'color' => '0366d6', 'description' => 'Dependency updates']],
             ['PATCH', '/repos/owner/repo/issues/2', ['title' => 'New title', 'body' => 'New'.$marker('vaultwarden-main:0f44744e', true)]],
             ['PATCH', '/repos/owner/repo/issues/3', ['state' => 'open', 'title' => 'Again']],

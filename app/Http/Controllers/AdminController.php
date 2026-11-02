@@ -61,8 +61,8 @@ use Throwable;
  * src/api/admin.rs: the admin panel, mounted at /admin below DOMAIN's path.
  *
  * Deviation, like the `server` object of /api/config: the diagnostics name
- * Vaultwarphpen with the Vaultwarden release it mirrors, look for newer
- * versions in Vaultwarphpen's repository, and show PHP's runtime instead of
+ * Kennword with the Vaultwarden release it mirrors, look for newer
+ * versions in Kennword's repository, and show PHP's runtime instead of
  * Rust's.
  */
 final readonly class AdminController
@@ -626,7 +626,7 @@ final readonly class AdminController
         [$latestRelease, $latestCommit, $latestWebRelease] = $this->releaseInfo($hasHttpAccess);
         $activeWebRelease = WebVault::activeRelease($this->config);
 
-        // Vaultwarphpen with the Vaultwarden release it mirrors. The newest version
+        // Kennword with the Vaultwarden release it mirrors. The newest version
         // is compared like the installed one, a release with releases and a
         // commit with commits; the page shows "Ok" when both read the same.
         $installed = Release::installed();
@@ -1024,7 +1024,7 @@ final readonly class AdminController
     }
 
     /**
-     * get_release_info: the latest release and commit of Vaultwarphpen and the
+     * get_release_info: the latest release and commit of Kennword and the
      * latest web vault, "-" for what cannot be fetched.
      *
      * @return array{string, string, string}

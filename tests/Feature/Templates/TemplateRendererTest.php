@@ -18,7 +18,7 @@ class TemplateRendererTest extends TestCase
     {
         parent::setUp();
 
-        $this->overrides = sys_get_temp_dir().'/vaultwarphpen-templates-'.bin2hex(random_bytes(4));
+        $this->overrides = sys_get_temp_dir().'/kennword-templates-'.bin2hex(random_bytes(4));
         File::ensureDirectoryExists($this->overrides);
     }
 

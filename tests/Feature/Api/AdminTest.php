@@ -309,11 +309,11 @@ class AdminTest extends TestCase
     }
 
     /**
-     * The agreed deviation: Vaultwarphpen, the release it mirrors and PHP's runtime.
+     * The agreed deviation: Kennword, the release it mirrors and PHP's runtime.
      */
     #[Parity('route:GET /admin/diagnostics')]
     #[Parity('route:GET /admin/diagnostics/http')]
-    public function test_diagnostics_name_vaultwarphpen(): void
+    public function test_diagnostics_name_kennword(): void
     {
         $this->useDatabase('sqlite');
         // No requests leave the test, and the web vault installed for the client tests stays out of it.
@@ -326,7 +326,7 @@ class AdminTest extends TestCase
         }
         $data = json_decode($match[1], true);
         $this->assertIsArray($data);
-        $this->assertSame('Vaultwarphpen '.Release::installed().' (Vaultwarden 1.37.5)', $data['current_release']);
+        $this->assertSame('Kennword '.Release::installed().' (Vaultwarden 1.37.5)', $data['current_release']);
         $this->assertSame(['-', '-', '-'], [$data['latest_release'], $data['latest_commit'], $data['latest_web_release']]);
         $this->assertFalse($data['has_http_access']);
         $this->assertSame('Unable to fetch NTP time.', $data['ntp_time']);

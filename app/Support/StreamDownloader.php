@@ -21,7 +21,7 @@ final class StreamDownloader implements Downloader
 
         for ($redirect = 0; $redirect <= self::MAX_REDIRECTS; $redirect++) {
             $lines = [];
-            foreach (['User-Agent' => 'Vaultwarphpen', ...$headers] as $name => $value) {
+            foreach (['User-Agent' => 'Kennword', ...$headers] as $name => $value) {
                 $lines[] = "{$name}: {$value}";
             }
             $context = stream_context_create(['http' => [

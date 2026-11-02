@@ -38,7 +38,7 @@ Status: ✅ done (needs a test) · 🟨 partial · ⬜ todo · ➖ won't fix
 | ✅ | GET `/api/alive` | src/api/core/mod.rs:183 | 2 | Same status, content type and JSON body; security headers and CORS like util::AppHeaders and util::Cors. |
 | ✅ | GET `/api/now` | src/api/core/mod.rs:188 | 2 | Same status, content type and JSON body; security headers and CORS like util::AppHeaders and util::Cors. |
 | ✅ | GET `/api/version` | src/api/core/mod.rs:193 | 2 | Same status, content type and JSON body; security headers and CORS like util::AppHeaders and util::Cors. |
-| ✅ | GET `/api/config` | src/api/core/mod.rs:210 | 1 | Compared with Vaultwarden in tests/Differential/AccountManagementTest; also tests/Feature/Api/AccountManagementTest. The server object names Vaultwarphpen and links to this repository (AGPL section 13), and gitHash is null; both are left out of the comparison. |
+| ✅ | GET `/api/config` | src/api/core/mod.rs:210 | 1 | Compared with Vaultwarden in tests/Differential/AccountManagementTest; also tests/Feature/Api/AccountManagementTest. The server object names Kennword and links to this repository (AGPL section 13), and gitHash is null; both are left out of the comparison. |
 | ✅ | GET `/api/webauthn` | src/api/core/mod.rs:198 | 1 | Compared with Vaultwarden in tests/Differential/AccountManagementTest; also tests/Feature/Api/AccountManagementTest. |
 | ✅ | GET `/api/accounts/profile` | src/api/core/accounts.rs:505 | 1 | Compared with Vaultwarden in tests/Differential: AccountTest, and with organizations in OrganizationTest. |
 | ✅ | PUT `/api/accounts/profile` | src/api/core/accounts.rs:517 | 1 | Compared with Vaultwarden in tests/Differential: AccountTest, and with organizations in OrganizationTest. |
@@ -295,7 +295,7 @@ Status: ✅ done (needs a test) · 🟨 partial · ⬜ todo · ➖ won't fix
 | ✅ | GET `/admin/users/overview` | src/api/admin.rs:375 | 1 | Compared with Vaultwarden in tests/Differential/AdminTest. |
 | ✅ | GET `/admin/organizations/overview` | src/api/admin.rs:604 | 1 | Compared with Vaultwarden in tests/Differential/AdminTest. |
 | ✅ | POST `/admin/organizations/{org_id}/delete` | src/api/admin.rs:624 | 1 | Compared with Vaultwarden in tests/Differential/AdminTest. |
-| ✅ | GET `/admin/diagnostics` | src/api/admin.rs:761 | 2 | Agreed deviation (AGENTS.md): names Vaultwarphpen with the Vaultwarden release it mirrors, looks for newer versions in Vaultwarphpen's repository and shows PHP's runtime; DNS resolves IPv4 only. Compared with Vaultwarden by structure in tests/Differential/AdminTest. |
+| ✅ | GET `/admin/diagnostics` | src/api/admin.rs:761 | 2 | Agreed deviation (AGENTS.md): names Kennword with the Vaultwarden release it mirrors, looks for newer versions in Kennword's repository and shows PHP's runtime; DNS resolves IPv4 only. Compared with Vaultwarden by structure in tests/Differential/AdminTest. |
 | ✅ | GET `/admin/diagnostics/config` | src/api/admin.rs:833 | 2 | Compared with Vaultwarden in tests/Differential/AdminTest. |
 | ✅ | POST `/admin/users/{user_id}/invite/resend` | src/api/admin.rs:528 | 3 | Compared with Vaultwarden in tests/Differential/AdminTest, with and without mail; the mails as well. |
 | ✅ | GET `/admin/diagnostics/http` | src/api/admin.rs:839 | 2 | Compared with Vaultwarden in tests/Differential/AdminTest. |

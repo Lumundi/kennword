@@ -1,9 +1,9 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "christianrudde/vaultwarphpen",
+    "name": "lumundi/kennword",
     "type": "project",
-    "description": "PHP port of Vaultwarden, the Bitwarden-compatible server.",
-    "homepage": "https://github.com/christianrudde/vaultwarphpen",
+    "description": "A password server for plain PHP hosting that works with the official Bitwarden apps: a PHP port of Vaultwarden.",
+    "homepage": "https://github.com/Lumundi/kennword",
     "keywords": [
         "bitwarden",
         "vaultwarden",
@@ -17,15 +17,15 @@
             "name": "Lumundi Versand GmbH"
         },
         {
-            "name": "Vaultwarphpen contributors",
-            "homepage": "https://github.com/christianrudde/vaultwarphpen/graphs/contributors"
+            "name": "Kennword contributors",
+            "homepage": "https://github.com/Lumundi/kennword/graphs/contributors"
         }
     ],
     "support": {
-        "issues": "https://github.com/christianrudde/vaultwarphpen/issues",
-        "source": "https://github.com/christianrudde/vaultwarphpen",
-        "docs": "https://github.com/christianrudde/vaultwarphpen/blob/main/docs/installation.md",
-        "security": "https://github.com/christianrudde/vaultwarphpen/security/policy"
+        "issues": "https://github.com/Lumundi/kennword/issues",
+        "source": "https://github.com/Lumundi/kennword",
+        "docs": "https://github.com/Lumundi/kennword/blob/main/docs/installation.md",
+        "security": "https://github.com/Lumundi/kennword/security/policy"
     },
     "require": {
         "php": "^8.5.12",

@@ -325,7 +325,7 @@ test('the web vault shows what the CLI creates', async () => {
     })]);
     if (process.env.VW_CLIENTS_SERVER === 'vaultwarden') {
         // Vaultwarden 1.37.5 keeps the id of the user key that the rotation above replaced, so it
-        // refuses items encrypted by the new one; Vaultwarphpen drops the old id. This fails once
+        // refuses items encrypted by the new one; Kennword drops the old id. This fails once
         // Vaultwarden fixes it (dani-garcia/vaultwarden#7927): then port its fix and remove the exception.
         await expect(created).rejects.toThrow(/Invalid key cipher/);
 

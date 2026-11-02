@@ -91,7 +91,7 @@ final readonly class VaultwardenAdvisories implements Source
                 ."| | |\n| --- | --- |\n"
                 .implode("\n", array_map(static fn (string $name, string $value): string => "| {$name} | {$value} |", array_keys($rows), $rows))
                 .$this->source(Matrix::string($advisory['description'] ?? ''))
-                ."\n\n- [ ] Check whether Vaultwarphpen has the flaw: compare our counterpart with Vaultwarden's fix.\n"
+                ."\n\n- [ ] Check whether Kennword has the flaw: compare our counterpart with Vaultwarden's fix.\n"
                 ."- [ ] If it has, do not discuss the details here: fix it privately as SECURITY.md describes, then close this issue.\n"
                 .'- [ ] Add a regression test, so that the fix cannot get lost when the pin moves.',
             labels: ['upstream-security'],

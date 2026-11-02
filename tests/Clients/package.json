@@ -1,5 +1,5 @@
 {
-    "name": "vaultwarphpen-clients",
+    "name": "kennword-clients",
     "private": true,
     "description": "End-to-end tests that drive the official Bitwarden clients against a server",
     "license": "AGPL-3.0-only",

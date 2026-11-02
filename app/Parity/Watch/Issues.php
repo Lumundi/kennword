@@ -21,7 +21,7 @@ final readonly class Issues
         'watch' => ['ededed', 'Opened by the watch workflow (docs/maintenance.md)'],
         'upstream' => ['1d76db', 'A change in Vaultwarden to port'],
         'upstream-security' => ['b60205', 'A security fix in Vaultwarden to port or verify'],
-        'security' => ['d93f0b', 'A security advisory for something Vaultwarphpen depends on'],
+        'security' => ['d93f0b', 'A security advisory for something Kennword depends on'],
         'dependencies' => ['0366d6', 'Dependency updates'],
     ];
 

@@ -155,7 +155,7 @@ class VaultwardenCheck extends Command
         $relative = $data !== '' && ! str_starts_with($data, '/') && ! str_contains($data, '://');
         $label = 'DATA_FOLDER'.($relative ? ' (relative)' : '');
         if (str_starts_with($data, 's3://')) {
-            $this->problem($label, 'S3', 'Vaultwarphpen keeps its data on the local disk only.');
+            $this->problem($label, 'S3', 'Kennword keeps its data on the local disk only.');
         } elseif (! is_dir($config->path('data_folder'))) {
             $this->problem($label, 'missing', 'Copy Vaultwarden\'s data folder here, or set DATA_FOLDER to where it is.');
         } elseif (! is_writable($config->path('data_folder'))) {
@@ -164,14 +164,14 @@ class VaultwardenCheck extends Command
             $this->ok($label, 'found, writable');
         }
         if ($relative) {
-            $this->line('    Relative paths start from Vaultwarphpen\'s folder here; Vaultwarden starts them from its working directory (/ in Docker).');
+            $this->line('    Relative paths start from Kennword\'s folder here; Vaultwarden starts them from its working directory (/ in Docker).');
         }
 
         foreach (self::FOLDERS as $name) {
             $path = $config->string($name);
             $label = strtoupper($name);
             if (str_starts_with($path, 's3://')) {
-                $this->problem($label, 'S3', 'Vaultwarphpen keeps its data on the local disk only.');
+                $this->problem($label, 'S3', 'Kennword keeps its data on the local disk only.');
             } elseif (! is_dir($config->path($name))) {
                 $this->note($label, 'none yet');
             } elseif (! is_writable($config->path($name))) {
@@ -269,7 +269,7 @@ class VaultwardenCheck extends Command
         if ($unknown !== []) {
             sort($unknown);
             $this->problem('From a newer Vaultwarden', implode(', ', $unknown),
-                'These migrations are newer than Vaultwarden '.Release::vaultwarden().', which Vaultwarphpen follows. Move from that version or an older one.');
+                'These migrations are newer than Vaultwarden '.Release::vaultwarden().', which Kennword follows. Move from that version or an older one.');
         }
         if ($pending !== []) {
             $this->warning('To apply', (string) count($pending), 'php artisan vaultwarden:migrate applies them, as a Vaultwarden update would. '
