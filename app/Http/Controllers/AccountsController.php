@@ -638,6 +638,8 @@ final readonly class AccountsController
         $folders = array_map(static fn (Fields $f): array => [$f->optionalNonEmptyString('id'), $f->string('name')], $accountData->objectList('folders'));
         $sends = array_map(SendData::fromFields(...), $accountData->objectList('sends'));
         $oldHash = $body->string('oldMasterKeyAuthenticationHash');
+        // Not in Vaultwarden 1.37.5: Bitwarden's RotateUserAccountKeysCommand takes the id of the new key.
+        $newUserKeyId = $body->optionalString('newUserKeyId');
         $user = $headers->user;
 
         if (! $user->checkValidPassword($oldHash)) {
@@ -708,9 +710,9 @@ final readonly class AccountsController
         }
 
         $user->private_key = $privateKey;
-        // Not in Vaultwarden 1.37.5: the new user key has an id of its own, which the clients send
-        // again once the old one is gone; otherwise POST /api/ciphers refuses their new items.
-        $user->key_id = null;
+        // The old id names a key that no longer exists, so it goes even when the request names none;
+        // the clients then record the new one, which POST /api/ciphers would refuse otherwise.
+        $user->key_id = $newUserKeyId;
         $user->setPassword($unlock['masterKeyAuthenticationHash'], $unlock['masterKeyEncryptedUserKey'], true, null);
         try {
             $user->save();

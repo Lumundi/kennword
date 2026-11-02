@@ -118,14 +118,18 @@ class AccountManagementTest extends TestCase
         $this->postJson('/api/accounts/key-management/user-key-id', ['userKeyId' => 'old-key-id'], $this->session)->assertStatus(200);
         $this->postJson('/api/accounts/key-management/rotate-user-account-keys', [...$rotation, 'accountData' => ['ciphers' => [], 'folders' => [], 'sends' => []]],
             $this->session)->assertStatus(400)->assertJsonPath('message', 'All existing folders must be included in the rotation');
-        $this->postJson('/api/accounts/key-management/rotate-user-account-keys', $rotation, $this->session)->assertStatus(200);
+        // Like Bitwarden's, a rotation that names the id of the new user key keeps it (Vaultwarden 1.37.5 keeps the old one).
+        $this->postJson('/api/accounts/key-management/rotate-user-account-keys', [...$rotation, 'newUserKeyId' => 'rotated-key-id'], $this->session)->assertStatus(200);
         $this->assertSame('2.rotated', Folder::query()->where('uuid', $folder)->value('name'));
         $user = User::findByUuid($this->user->uuid);
-        $this->assertSame(['2.rotated-key', '2.private'], [$user?->akey, $user?->private_key]);
+        $this->assertSame(['2.rotated-key', '2.private', 'rotated-key-id'], [$user?->akey, $user?->private_key, $user?->key_id]);
         $this->assertTrue($user?->checkValidPassword('rotated-hash'));
-        // Unlike Vaultwarden 1.37.5, the id of the old user key goes with it: the clients send the new one,
-        // and their items, encrypted by it, are taken.
-        $this->assertNull($user->key_id);
+
+        // Without it, the old id goes all the same: the clients record the new one, and their items, encrypted by it, are taken.
+        $this->signUp($driver, fresh: false);
+        $this->postJson('/api/accounts/key-management/rotate-user-account-keys', [...$rotation, 'oldMasterKeyAuthenticationHash' => 'rotated-hash'], $this->session)
+            ->assertStatus(200);
+        $this->assertNull(User::findByUuid($this->user->uuid)?->key_id);
         $this->signUp($driver, fresh: false);
         $this->get('/api/sync', $this->session)->assertJsonPath('userDecryption.userKeyId', null);
         $this->postJson('/api/accounts/key-management/user-key-id', ['userKeyId' => 'new-key-id'], $this->session)->assertStatus(200);
