@@ -115,6 +115,7 @@ class AccountManagementTest extends TestCase
             'accountData' => ['ciphers' => [], 'folders' => [['id' => $folder, 'name' => '2.rotated']], 'sends' => []],
             'oldMasterKeyAuthenticationHash' => 'client-hash',
         ];
+        $this->postJson('/api/accounts/key-management/user-key-id', ['userKeyId' => 'old-key-id'], $this->session)->assertStatus(200);
         $this->postJson('/api/accounts/key-management/rotate-user-account-keys', [...$rotation, 'accountData' => ['ciphers' => [], 'folders' => [], 'sends' => []]],
             $this->session)->assertStatus(400)->assertJsonPath('message', 'All existing folders must be included in the rotation');
         $this->postJson('/api/accounts/key-management/rotate-user-account-keys', $rotation, $this->session)->assertStatus(200);
@@ -122,9 +123,16 @@ class AccountManagementTest extends TestCase
         $user = User::findByUuid($this->user->uuid);
         $this->assertSame(['2.rotated-key', '2.private'], [$user?->akey, $user?->private_key]);
         $this->assertTrue($user?->checkValidPassword('rotated-hash'));
+        // Unlike Vaultwarden 1.37.5, the id of the old user key goes with it: the clients send the new one,
+        // and their items, encrypted by it, are taken.
+        $this->assertNull($user->key_id);
+        $this->signUp($driver, fresh: false);
+        $this->get('/api/sync', $this->session)->assertJsonPath('userDecryption.userKeyId', null);
+        $this->postJson('/api/accounts/key-management/user-key-id', ['userKeyId' => 'new-key-id'], $this->session)->assertStatus(200);
+        $this->postJson('/api/ciphers', ['type' => 2, 'name' => '2.note', 'secureNote' => ['type' => 0], 'encryptedFor' => $this->user->uuid,
+            'encryptedByKeyId' => 'new-key-id'], $this->session)->assertStatus(200);
 
         // Without mail the code is not checked and the address is not verified.
-        $this->signUp($driver, fresh: false);
         $this->postJson('/api/accounts/email-token', ['masterPasswordHash' => 'rotated-hash', 'newEmail' => 'new@example.com'], $this->session)->assertStatus(200);
         $this->postJson('/api/accounts/email', ['masterPasswordHash' => 'rotated-hash', 'newEmail' => 'new@example.com', 'key' => '2.new',
             'newMasterPasswordHash' => 'new-hash', 'token' => 'anything'], $this->session)->assertStatus(200);

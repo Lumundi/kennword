@@ -708,6 +708,9 @@ final readonly class AccountsController
         }
 
         $user->private_key = $privateKey;
+        // Not in Vaultwarden 1.37.5: the new user key has an id of its own, which the clients send
+        // again once the old one is gone; otherwise POST /api/ciphers refuses their new items.
+        $user->key_id = null;
         $user->setPassword($unlock['masterKeyAuthenticationHash'], $unlock['masterKeyEncryptedUserKey'], true, null);
         try {
             $user->save();

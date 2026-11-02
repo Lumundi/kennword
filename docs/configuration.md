@@ -43,8 +43,8 @@ effect:
 - the database pool settings (see below)
 - `TMP_FOLDER`: uploads wait in PHP's own temporary folder (`upload_tmp_dir`) until they are stored
 - `DNS_PREFER_IPV6`: outgoing requests take the addresses in the order the system's resolver gives them
-- `SMTP_DEBUG` and `SSO_DEBUG_TOKENS`, which make Vaultwarden log the SMTP conversation and the
-  provider's tokens
+- `SMTP_DEBUG`, which makes Vaultwarden log the SMTP conversation; `SSO_DEBUG_TOKENS` only switches
+  what is logged about the user who logged in with SSO, not the provider's tokens and answers
 
 The `config:` items in [PARITY.md](../PARITY.md) show the state of each setting and how it is tested.
 
@@ -89,8 +89,8 @@ The `config:` items in [PARITY.md](../PARITY.md) show the state of each setting 
 - **The server's name.** Where Vaultwarden names itself to the clients (the `server` object of
   `/api/config`), Vaultwarphpen names itself and links to its own repository, so that users find the
   source of the server they use and report problems in the right place.
-- **SSO** works like Vaultwarden's ([setup guide](sso.md)), except that `SSO_DEBUG_TOKENS` logs
-  nothing. The discovered provider is cached for `SSO_CLIENT_CACHE_EXPIRATION` seconds in Laravel's
+- **SSO** works like Vaultwarden's ([setup guide](sso.md)), except that `SSO_DEBUG_TOKENS` logs none
+  of the provider's tokens. The discovered provider is cached for `SSO_CLIENT_CACHE_EXPIRATION` seconds in Laravel's
   cache, so all PHP workers share it.
 - **The admin diagnostics** name Vaultwarphpen, with the Vaultwarden release it follows, and look for
   newer versions in Vaultwarphpen's repository (its latest release, or the latest commit for an
@@ -100,6 +100,12 @@ The `config:` items in [PARITY.md](../PARITY.md) show the state of each setting 
 - **Settings take effect at once.** Vaultwarden reads `config.json` when it starts and when its admin
   panel saves; PHP reads the configuration for every request. Setting or removing `ADMIN_TOKEN` in
   `config.json` therefore opens or closes the admin panel right away, where Vaultwarden needs a restart.
+- **The id of the user key.** Clients since 2026.10 record the id of the account's user key once
+  (`POST /api/accounts/key-management/user-key-id`) and send it with new items. Vaultwarden 1.37.5 keeps
+  it when the account key is rotated and then refuses the items encrypted by the new key ("Invalid key
+  cipher"); Vaultwarphpen drops the old id with the rotation, so that the clients record the new one.
+  Until Vaultwarden fixes this, an account whose key Vaultwarphpen rotated has no id there either, which
+  Vaultwarden reads like an account that never had one.
 - **Development routes.** Vaultwarden's debug builds serve static files from the source tree at
   `/vw_static/`; release builds do not, and neither does Vaultwarphpen.
 - **Caches.** Do not cache Laravel's configuration or routes (see

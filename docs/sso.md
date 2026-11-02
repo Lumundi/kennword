@@ -52,7 +52,7 @@ with the next request.
 | `SSO_AUDIENCE_TRUSTED` | | A regular expression for further audiences that ID tokens may name besides the client ID. |
 | `SSO_CLIENT_CACHE_EXPIRATION` | `0` | Seconds to keep the provider's discovery document and keys; `0` fetches them for every login. |
 | `SSO_MASTER_PASSWORD_POLICY` | | The master password policy for SSO users, as JSON: `{"minLength":14,"minComplexity":3,"requireUpper":true,"enforceOnLogin":true}`. |
-| `SSO_DEBUG_TOKENS` | `false` | Vaultwarden logs the provider's tokens with it; Vaultwarphpen logs nothing. |
+| `SSO_DEBUG_TOKENS` | `false` | Vaultwarden logs the provider's tokens with it; Vaultwarphpen only logs the whole of the authenticated user instead of its identifier. |
 
 Things that apply to every provider:
 
