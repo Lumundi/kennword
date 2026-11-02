@@ -14,7 +14,9 @@ supported; fixes are not backported to older releases.
 
 Report it through GitHub's private vulnerability reporting:
 [Security → Report a vulnerability](https://github.com/Lumundi/kennword/security/advisories/new).
-Please do not open a public issue.
+If you cannot use GitHub, write to [security@kennword.org](mailto:security@kennword.org) instead;
+[security.txt](https://www.kennword.org/.well-known/security.txt) lists both channels. Please do not open
+a public issue.
 
 Helpful to include:
 
