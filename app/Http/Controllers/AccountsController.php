@@ -945,7 +945,7 @@ final readonly class AccountsController
         if (($claims['sub'] ?? null) !== $user->uuid) {
             throw ApiError::message('Invalid claim');
         }
-        $user->deleteUser();
+        $this->deleteAndLogOut($user);
 
         return new EmptyResponse;
     }
@@ -957,9 +957,26 @@ final readonly class AccountsController
     {
         $data = PasswordOrOtpData::fromFields(Body::json($request));
         $data->validate($headers->user, true, $this->config);
-        $headers->user->deleteUser();
+        $this->deleteAndLogOut($headers->user);
 
         return new EmptyResponse;
+    }
+
+    /**
+     * The devices are deleted together with the user, so the push devices are
+     * looked for beforehand.
+     *
+     * @throws ApiError
+     */
+    private function deleteAndLogOut(User $user): void
+    {
+        $hasPushDevice = $this->config->bool('push_enabled') && Device::checkUserHasPushDevice($user->uuid);
+        $user->deleteUser();
+
+        $this->nt->sendLogout($user, null);
+        if ($hasPushDevice) {
+            Push::logoutToRelay($user, null);
+        }
     }
 
     /**
@@ -992,7 +1009,8 @@ final readonly class AccountsController
             return new EmptyResponse;
         }
 
-        throw ApiError::message($user->password_hint === null ? $noHint : "Your password hint is: {$user->password_hint}");
+        // The hint is shown, but kept out of the log.
+        throw $user->password_hint === null ? ApiError::message($noHint) : ApiError::silent("Your password hint is: {$user->password_hint}");
     }
 
     /**

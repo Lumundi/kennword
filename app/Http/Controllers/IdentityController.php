@@ -167,7 +167,7 @@ final readonly class IdentityController
                 Body::optionalFormField($data, ['password_hash_b64']),
                 $ip,
             ),
-            default => throw ApiError::message('Invalid type'),
+            default => throw ApiError::message('Invalid type', logMessage: EscapeDebug::of($grantType)),
         };
     }
 
@@ -191,7 +191,7 @@ final readonly class IdentityController
             404,
         );
 
-        $sendId = Send::uuidFromAccessId($accessId) ?? throw $invalid("Can't convert {$accessId}", 'send_id_invalid');
+        $sendId = Send::uuidFromAccessId($accessId) ?? throw $invalid("Can't convert ".EscapeDebug::of($accessId), 'send_id_invalid');
         $send = Send::findByUuid($sendId) ?? throw $invalid("Can't find {$sendId}", 'send_id_invalid');
 
         if ($send->max_access_count !== null && $send->access_count >= $send->max_access_count) {
@@ -307,6 +307,32 @@ final readonly class IdentityController
         return Accept::prefersJson($request)
             ? Json::response($token)
             : new Response($token, 200, ['Content-Type' => 'text/plain; charset=utf-8']);
+    }
+
+    /**
+     * POST /identity/accounts/register/verification-email-clicked: whether the
+     * link of the mail still leads to a registration.
+     */
+    public function registerVerificationEmailClicked(Request $request): EmptyResponse
+    {
+        $body = Body::json($request);
+        $email = $body->string('email');
+        $token = $body->string('emailVerificationToken');
+
+        try {
+            $claims = $this->jwt->decode($token, JwtIssuer::RegisterVerify, fields: Jwt::REGISTER_VERIFY_CLAIMS);
+            $tokenValid = $claims['verified'] === true && is_string($claims['sub']) && strcasecmp($claims['sub'], $email) === 0;
+        } catch (ApiError) {
+            $tokenValid = false;
+        }
+        $user = User::findByMail($email);
+        $userExists = $user !== null && ($user->password_hash !== '' || $user->private_key !== null);
+
+        if (! $tokenValid || $userExists) {
+            throw ApiError::message('Expired link. Please restart registration or try logging in. You may already have an account');
+        }
+
+        return new EmptyResponse;
     }
 
     /**

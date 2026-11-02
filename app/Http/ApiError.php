@@ -23,6 +23,7 @@ final class ApiError extends RuntimeException
         public readonly mixed $body = null,
         public readonly ?string $logMessage = null,
         public readonly ?int $event = null,
+        public readonly bool $silent = false,
     ) {
         parent::__construct($message);
     }
@@ -36,6 +37,14 @@ final class ApiError extends RuntimeException
     public static function message(string $message, int $status = 400, ?string $logMessage = null, ?int $event = null): self
     {
         return new self($message, $status, 'simple', logMessage: $logMessage, event: $event);
+    }
+
+    /**
+     * err_silent!(message): the same error, but nothing goes to the log.
+     */
+    public static function silent(string $message, int $status = 400): self
+    {
+        return new self($message, $status, 'simple', silent: true);
     }
 
     /**
@@ -64,12 +73,21 @@ final class ApiError extends RuntimeException
 
     public function withStatus(int $status): self
     {
-        return new self($this->message, $status, $this->kind, $this->body, $this->logMessage);
+        return new self($this->message, $status, $this->kind, $this->body, $this->logMessage, $this->event, $this->silent);
     }
 
     /**
-     * The error's Debug formatting, which bulk responses show per item: the
-     * message, followed by the log value when there is one.
+     * Error::message(): what the user is told, which bulk responses show per
+     * item. Error::empty() carries the name of its kind.
+     */
+    public function userMessage(): string
+    {
+        return $this->kind === 'empty' ? 'Empty' : $this->message;
+    }
+
+    /**
+     * The error's Debug formatting: the message, followed by the log value
+     * when there is one.
      */
     public function debugText(): string
     {
@@ -93,6 +111,9 @@ final class ApiError extends RuntimeException
      */
     public function report(): void
     {
+        if ($this->silent) {
+            return;
+        }
         Log::error($this->logMessage === null ? $this->message : "{$this->message}. {$this->logMessage}");
     }
 

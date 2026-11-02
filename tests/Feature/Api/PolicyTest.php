@@ -11,6 +11,7 @@ use App\Models\Membership;
 use App\Models\OrgPolicy;
 use App\Models\User;
 use App\Support\Random;
+use Illuminate\Testing\TestResponse;
 use Tests\Concerns\UsesVaultwardenDatabase;
 use Tests\TestCase;
 
@@ -91,6 +92,36 @@ class PolicyTest extends TestCase
         // Owners are exempt from the 2FA policy.
         $this->putJson("/api/organizations/{$org}/policies/0", ['policy' => ['enabled' => true, 'data' => null]], $this->owner)->assertStatus(200);
         $this->get("/api/organizations/{$org}/users", $this->owner)->assertJsonPath('data.0.status', Membership::STATUS_CONFIRMED);
+    }
+
+    public function test_the_fill_assist_policy(): void
+    {
+        $org = $this->createOrganization();
+        $put = fn (int $type, bool $enabled, mixed $data): TestResponse => $this->putJson("/api/organizations/{$org}/policies/{$type}",
+            ['policy' => ['enabled' => $enabled, 'data' => $data]], $this->owner);
+
+        $put(22, true, ['rulesUrl' => 'https://rules.example'])->assertStatus(400)
+            ->assertJsonPath('message', 'Turn on the Single organization policy because it is required for the Activate fill assist policy.');
+        $put(22, false, ['rulesUrl' => 5])->assertStatus(400)->assertJsonPath('message', 'Invalid data for FillAssist policy: rulesUrl has an invalid value.');
+        $put(3, true, null)->assertStatus(200);
+
+        $put(22, true, null)->assertStatus(400)->assertJsonPath('message', 'The RulesUrl field is required.');
+        $put(22, true, ['rulesUrl' => " \u{3000}"])->assertStatus(400)->assertJsonPath('message', 'The RulesUrl field is required.');
+        $put(22, true, ['rulesUrl' => 'https://a.example', 'RulesUrl' => 'https://b.example'])->assertStatus(400)
+            ->assertJsonPath('message', 'Invalid data for FillAssist policy: rulesUrl has an invalid value.');
+        $put(22, true, 'https://rules.example')->assertStatus(400)->assertJsonPath('message', 'Invalid data for FillAssist policy: rulesUrl has an invalid value.');
+        $put(22, true, [])->assertStatus(400)->assertJsonPath('message', 'Invalid data for FillAssist policy: rulesUrl has an invalid value.');
+        $put(22, true, ['rulesUrl' => 'mailto:rules@example.com'])->assertStatus(400)
+            ->assertJsonPath('message', 'The RulesUrl field is not a valid fully-qualified http, https, or ftp URL.');
+        $put(22, true, ['RulesUrl' => 'ftp://rules.example'])->assertStatus(400)->assertJsonPath('message', 'RulesUrl must use HTTPS.');
+        // Like any derived struct, the data may be a sequence of its fields.
+        $put(22, true, ['https://rules.example'])->assertStatus(200)->assertJsonPath('data', ['https://rules.example']);
+        $put(22, true, ['RulesUrl' => 'https://rules.example/feed'])->assertStatus(200)->assertJsonPath('enabled', true);
+
+        $put(3, false, null)->assertStatus(400)->assertJsonPath('message', 'Turn off the Activate fill assist policy because it requires the Single organization policy.');
+        $put(22, false, null)->assertStatus(200);
+        $put(3, false, null)->assertStatus(200);
+        $this->assertSame([false, false], [OrgPolicy::findByOrgAndType($org, 3)?->enabled, OrgPolicy::findByOrgAndType($org, 22)?->enabled]);
     }
 
     public function test_policies_by_invitation_token(): void

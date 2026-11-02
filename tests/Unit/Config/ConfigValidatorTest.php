@@ -38,6 +38,13 @@ class ConfigValidatorTest extends TestCase
         yield 'min above max' => [['DATABASE_MIN_CONNS' => '20'], '`DATABASE_MIN_CONNS` must be less than or equal to `DATABASE_MAX_CONNS`.'];
         yield 'database timeout' => [['DATABASE_TIMEOUT' => '0'], '`DATABASE_TIMEOUT` must be at least 1 second'];
         yield 'domain without protocol' => [['DOMAIN' => 'vault.example.com'], 'DOMAIN variable needs to contain the protocol'];
+        yield 'fill assist over http' => [['FILL_ASSIST_RULES_URL' => 'http://rules.example'], '`FILL_ASSIST_RULES_URL` must be a valid HTTPS URL without credentials, query parameters, fragments, or surrounding whitespace.'];
+        yield 'fill assist with credentials' => [['FILL_ASSIST_RULES_URL' => 'https://user@rules.example'], '`FILL_ASSIST_RULES_URL` must be a valid HTTPS URL without credentials, query parameters, fragments, or surrounding whitespace.'];
+        yield 'fill assist with a password' => [['FILL_ASSIST_RULES_URL' => 'https://:secret@rules.example'], '`FILL_ASSIST_RULES_URL` must be a valid HTTPS URL without credentials, query parameters, fragments, or surrounding whitespace.'];
+        yield 'fill assist with a query' => [['FILL_ASSIST_RULES_URL' => 'https://rules.example/?'], '`FILL_ASSIST_RULES_URL` must be a valid HTTPS URL without credentials, query parameters, fragments, or surrounding whitespace.'];
+        yield 'fill assist with a fragment' => [['FILL_ASSIST_RULES_URL' => 'https://rules.example/#rules'], '`FILL_ASSIST_RULES_URL` must be a valid HTTPS URL without credentials, query parameters, fragments, or surrounding whitespace.'];
+        yield 'fill assist with whitespace' => [['FILL_ASSIST_RULES_URL' => "https://rules.example\u{a0}"], '`FILL_ASSIST_RULES_URL` must be a valid HTTPS URL without credentials, query parameters, fragments, or surrounding whitespace.'];
+        yield 'fill assist without a host' => [['FILL_ASSIST_RULES_URL' => 'https://'], '`FILL_ASSIST_RULES_URL` must be a valid HTTPS URL without credentials, query parameters, fragments, or surrounding whitespace.'];
         yield 'connect src over http' => [['ALLOWED_CONNECT_SRC' => 'https://a.example http://b.example'], 'ALLOWED_CONNECT_SRC variable contains one or more invalid URLs'];
         yield 'whitelist empty token' => [['SIGNUPS_DOMAINS_WHITELIST' => 'example.com,,example.org'], '`SIGNUPS_DOMAINS_WHITELIST` contains empty tokens'];
         yield 'org creation users' => [['ORG_CREATION_USERS' => 'admin@example.com,admin'], '`ORG_CREATION_USERS` contains invalid email addresses'];
@@ -65,6 +72,8 @@ class ConfigValidatorTest extends TestCase
         yield 'icon service placeholders' => [['ICON_SERVICE' => 'https://icons.example/{}/{}'], 'has more than one placeholder "{}"'];
         yield 'icon redirect code' => [['ICON_REDIRECT_CODE' => '303'], 'Only HTTP 301/302 and 307/308 redirects are supported'];
         yield 'invitation hours' => [['INVITATION_EXPIRATION_HOURS' => '0'], '`INVITATION_EXPIRATION_HOURS` has a minimum duration of 1 hour'];
+        yield 'no remember days' => [['TWO_FACTOR_REMEMBER_DAYS' => '0'], '`TWO_FACTOR_REMEMBER_DAYS` must be between 1 and 90 days'];
+        yield 'too many remember days' => [['TWO_FACTOR_REMEMBER_DAYS' => '91'], '`TWO_FACTOR_REMEMBER_DAYS` must be between 1 and 90 days'];
         yield 'schedule' => [['TRASH_PURGE_SCHEDULE' => '0 5 0 * *'], '`TRASH_PURGE_SCHEDULE` is not a valid cron expression'];
         yield 'rate limit' => [['LOGIN_RATELIMIT_MAX_BURST' => '0'], '`LOGIN_RATELIMIT_MAX_BURST` must be at least 1'];
         yield 'argon2 admin token' => [['ADMIN_TOKEN' => '$argon2id$broken token'], 'The configured Argon2 PHC in `ADMIN_TOKEN` is invalid'];
@@ -98,6 +107,9 @@ class ConfigValidatorTest extends TestCase
         yield 'argon2 admin token' => [['ADMIN_TOKEN' => '$argon2id$v=19$m=65540,t=3,p=4$MmeKRnGK5RW5mJS7h3TOL89GrpLPXJPAtTK8FTqj9HM$DqsstvoSAETl9YhnsXbf43WeaUwJC6JhViIvuPoig78']];
         yield 'disabled admin token' => [['DISABLE_ADMIN_TOKEN' => 'true', 'ADMIN_TOKEN' => '$argon2id$broken token']];
         yield 'log level for modules' => [['LOG_LEVEL' => 'info,vaultwarden::api::icons=debug']];
+        // An empty user and password are none, like url's; a C0 control is no White_Space for str::trim.
+        yield 'fill assist rules' => [['FILL_ASSIST_RULES_URL' => 'https://:@rules.example/feeds/', 'TWO_FACTOR_REMEMBER_DAYS' => '90']];
+        yield 'fill assist with a control character' => [['FILL_ASSIST_RULES_URL' => "\x01https://rules.example", 'TWO_FACTOR_REMEMBER_DAYS' => '1']];
     }
 
     /**
@@ -120,7 +132,7 @@ class ConfigValidatorTest extends TestCase
         $this->assertCount(3, $config->warnings);
         $this->assertStringStartsWith('Unrecognized experimental client feature flags: {"unknown-flag": true}.', $config->warnings[0]);
         $this->assertStringEndsWith('Supported flags: ["pm-5594-safari-account-switching", "pm-32413-multi-client-password-management", '
-            .'"undetermined-cipher-scenario-logic", "enable-basic-auth-response", "ssh-agent-v2", "windows-desktop-autotype", '
+            .'"undetermined-cipher-scenario-logic", "enable-basic-auth-response", "fill-assist-targeting-rules", "ssh-agent-v2", "windows-desktop-autotype", '
             .'"windows-desktop-autotype-ga", "biometrics-sdk-ipc", "windows-native-credential-sync", "pm-34171-card-scanner", '
             ."\"pm-30529-webauthn-related-origins\", \"pm-32009-new-item-types\"]\n", $config->warnings[0]);
         $this->assertStringContainsString('plain text `ADMIN_TOKEN`', $config->warnings[1]);

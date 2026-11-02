@@ -5,6 +5,7 @@ namespace App\Icons;
 use App\Config\Config;
 use App\Support\BlockedHost;
 use App\Support\DataUrl;
+use App\Support\EscapeDebug;
 use App\Support\HttpClient;
 use App\Support\HttpRequestFailed;
 use App\Support\HttpResponse;
@@ -200,8 +201,9 @@ final readonly class IconService
             } elseif ($token['name'] === 'base') {
                 $href = $token['attributes']['href'] ?? null;
                 if ($href !== null) {
-                    Log::debug("Found base href: {$href}");
-                    $base = Url::parse(self::utf8OrEmpty($href), $base) ?? $base;
+                    $href = self::utf8OrEmpty($href);
+                    Log::debug('Found base href: '.EscapeDebug::of($href));
+                    $base = Url::parse($href, $base) ?? $base;
                 }
             } elseif ($token['name'] === 'head' && $token['closing']) {
                 break;

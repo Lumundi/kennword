@@ -29,8 +29,8 @@ class ReleaseBuildTest extends TestCase
     private const array KEPT = ['.env.example', 'LICENSE.txt', 'LICENSES/GPL-3.0.txt', 'NOTICE.md', 'artisan', 'database/vaultwarden/sqlite', 'parity/reference.json', 'parity/schema/sqlite.json'];
 
     private const array SOURCES = [
-        'https://github.com/vaultwarden/vw_web_builds/archive/refs/tags/v2026.8.0%2B0.tar.gz' => 'web-vault-2026.8.0-source-vw_web_builds.tar.gz',
-        'https://github.com/dani-garcia/bw_web_builds/archive/refs/tags/v2026.8.0.tar.gz' => 'web-vault-2026.8.0-source-bw_web_builds.tar.gz',
+        'https://github.com/vaultwarden/vw_web_builds/archive/refs/tags/v2026.10.1%2B0.tar.gz' => 'web-vault-2026.10.1-source-vw_web_builds.tar.gz',
+        'https://github.com/dani-garcia/bw_web_builds/archive/refs/tags/v2026.10.1.tar.gz' => 'web-vault-2026.10.1-source-bw_web_builds.tar.gz',
     ];
 
     private string $output;
@@ -91,7 +91,7 @@ class ReleaseBuildTest extends TestCase
         $this->assertSame([
             '.', '..',
             'vaultwarphpen-1.0.0.sha256', 'vaultwarphpen-1.0.0.tar.gz', 'vaultwarphpen-1.0.0.zip',
-            'web-vault-2026.8.0-source-bw_web_builds.tar.gz', 'web-vault-2026.8.0-source-vw_web_builds.tar.gz',
+            'web-vault-2026.10.1-source-bw_web_builds.tar.gz', 'web-vault-2026.10.1-source-vw_web_builds.tar.gz',
         ], scandir($this->output));
         $sums = '';
         foreach (['vaultwarphpen-1.0.0.tar.gz', 'vaultwarphpen-1.0.0.zip', ...array_values(self::SOURCES)] as $file) {
@@ -136,7 +136,7 @@ class ReleaseBuildTest extends TestCase
         $this->downloads->responses = [];
 
         $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('GitHub answered 404 without an archive for vaultwarden/vw_web_builds v2026.8.0+0.');
+        $this->expectExceptionMessage('GitHub answered 404 without an archive for vaultwarden/vw_web_builds v2026.10.1+0.');
         $this->command('release:build', ['--output' => $this->output, '--composer' => '/usr/bin/composer'])->run();
     }
 

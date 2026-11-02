@@ -331,6 +331,8 @@ Route::prefix('/identity')->group(function (): void {
     Route::post('/accounts/prelogin/password', [IdentityController::class, 'preloginPassword'])->name('identity::prelogin_password');
     Route::post('/accounts/register/send-verification-email', [IdentityController::class, 'registerVerificationEmail'])
         ->name('identity::register_verification_email');
+    Route::post('/accounts/register/verification-email-clicked', [IdentityController::class, 'registerVerificationEmailClicked'])
+        ->name('identity::register_verification_email_clicked');
     Route::post('/accounts/register/finish', [IdentityController::class, 'registerFinish'])->name('identity::register_finish');
     Route::get('/sso/prevalidate', [IdentityController::class, 'prevalidate'])->name('identity::prevalidate');
     // Both oidcsignin and oidcsignin_error.

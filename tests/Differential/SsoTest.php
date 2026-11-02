@@ -79,6 +79,9 @@ class SsoTest extends DifferentialTestCase
 
             $code = self::ssoCode($server, $steps, 'denied', ['deny' => '1']);
             $steps['denied login'] = self::login($server, $code);
+            // Vaultwarden 6ed6921c: the provider's error is escaped.
+            $code = self::ssoCode($server, $steps, 'denied with quotes', ['deny' => '1', 'deny_description' => "The user's \"no\"\n"]);
+            $steps['denied with quotes login'] = self::login($server, $code);
 
             $code = self::ssoCode($server, $steps, 'unverified', ['email' => 'sso-carol@example.com', 'verified' => 'false']);
             $steps['unverified login'] = self::login($server, $code);

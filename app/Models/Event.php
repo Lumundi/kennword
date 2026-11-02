@@ -73,6 +73,8 @@ final class Event extends Model
 
     public const int CIPHER_RESTORED = 1116;
 
+    public const int CIPHER_CLIENT_HTTP_AUTH_RELEASED = 1133;
+
     public const int COLLECTION_CREATED = 1300;
 
     public const int COLLECTION_UPDATED = 1301;
@@ -117,6 +119,10 @@ final class Event extends Model
     public const int ORGANIZATION_USER_LEFT = 1516;
 
     public const int ORGANIZATION_USER_ADMIN_RESET_TWO_FACTOR = 1519;
+
+    public const int ORGANIZATION_USER_REVOKED_TWO_FACTOR_NON_COMPLIANCE = 1520;
+
+    public const int ORGANIZATION_USER_REVOKED_SINGLE_ORGANIZATION_NON_COMPLIANCE = 1521;
 
     public const int ORGANIZATION_USER_NOTIFICATION_BANNER_ACTION_CLICKED = 1522;
 

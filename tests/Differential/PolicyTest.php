@@ -70,6 +70,49 @@ class PolicyTest extends DifferentialTestCase
         });
     }
 
+    /**
+     * Vaultwarden 863395f5: the Fill Assist policy needs the single
+     * organization policy and an HTTPS rules URL.
+     */
+    #[Parity('route:PUT /api/organizations/{org_id}/policies/{pol_type}')]
+    public function test_fill_assist_policy(): void
+    {
+        $this->assertSameFlows(function (Server $server): array {
+            [$owner] = CipherTest::session($server, 'fill-assist-owner@example.com');
+            $org = $server->json('POST', '/api/organizations', OrganizationTest::org(), $owner)->jsonString('id');
+            $policies = "/api/organizations/{$org}/policies";
+            $put = static fn (int $type, bool $enabled, mixed $data): Exchange => $server->json('PUT', "{$policies}/{$type}",
+                ['policy' => ['enabled' => $enabled, 'data' => $data]], $owner);
+            $steps = [];
+
+            $steps['without single organization'] = $put(22, true, ['rulesUrl' => 'https://rules.example']);
+            $steps['disabled without single organization'] = $put(22, false, ['rulesUrl' => 'not a url']);
+            $steps['disabled with bad data'] = $put(22, false, ['rulesUrl' => 5]);
+            $steps['enable single organization'] = $put(3, true, null);
+            $steps['without data'] = $put(22, true, null);
+            $steps['without a url'] = $put(22, true, ['other' => true]);
+            $steps['blank url'] = $put(22, true, ['rulesUrl' => " \u{a0}\t"]);
+            $steps['string data'] = $put(22, true, 'https://rules.example');
+            $steps['number url'] = $put(22, true, ['rulesUrl' => 5]);
+            $steps['both spellings'] = $put(22, true, ['rulesUrl' => 'https://a.example', 'RulesUrl' => 'https://b.example']);
+            $steps['empty list'] = $put(22, true, []);
+            $steps['longer list'] = $put(22, true, ['https://rules.example', 'https://more.example']);
+            $steps['not a url'] = $put(22, true, ['rulesUrl' => 'rules']);
+            $steps['mail url'] = $put(22, true, ['rulesUrl' => 'mailto:rules@example.com']);
+            $steps['ftp url'] = $put(22, true, ['rulesUrl' => 'ftp://rules.example/feed']);
+            $steps['http url'] = $put(22, true, ['RulesUrl' => 'http://rules.example']);
+            $steps['in a list'] = $put(22, true, ['https://list.example/feed']);
+            $steps['enable'] = $put(22, true, ['RulesUrl' => ' https://rules.example/feed?x#y ', 'extra' => 1]);
+            $steps['enable again with other data'] = $put(22, true, ['rulesUrl' => 'https://other.example']);
+            $steps['disable single organization'] = $put(3, false, null);
+            $steps['disable'] = $put(22, false, null);
+            $steps['disable single organization after'] = $put(3, false, null);
+            $steps['list'] = $server->send('GET', $policies, $owner);
+
+            return $steps;
+        });
+    }
+
     #[Parity('route:GET /api/organizations/{org_id}/policies/token')]
     public function test_policies_by_invitation_token(): void
     {

@@ -7,11 +7,13 @@ use App\Auth\Jwt;
 use App\Auth\LoginClaims;
 use App\Http\Controllers\TwoFactor\AuthenticatorController;
 use App\Mail\Transport;
+use App\Models\AuthRequest;
 use App\Models\Device;
 use App\Models\TwoFactor;
 use App\Models\TwoFactorIncomplete;
 use App\Models\User;
 use App\Support\Base32;
+use App\Support\Dates;
 use App\Support\Random;
 use Illuminate\Http\Response;
 use Illuminate\Testing\TestResponse;
@@ -251,6 +253,67 @@ class TwoFactorTest extends TestCase
         $this->assertNull($this->rememberToken());
     }
 
+    /**
+     * Vaultwarden acb574b7: a login request stands in for the password only
+     * when it belongs to the user and is approved, unused and recent.
+     */
+    public function test_an_email_code_for_a_login_request(): void
+    {
+        TwoFactor::new($this->user->uuid, TwoFactor::TYPE_EMAIL, '{"email":"judy@example.com","last_token":null,"token_sent":0,"attempts":0}')->save();
+        $other = User::new('other@example.com');
+        $other->save();
+        $request = static function (User $user, ?bool $approved, string $created = 'now', bool $used = false): string {
+            $request = AuthRequest::new($user->uuid, self::DEVICE, 10, '127.0.0.1', 'access-code', 'public-key');
+            $request->approved = $approved;
+            $request->creation_date = Dates::now()->modify($created);
+            $request->authentication_date = $used ? Dates::now() : null;
+            $request->save();
+
+            return $request->uuid;
+        };
+        $send = fn (string $id, array $changes = [], string $deviceType = '10') => $this->postJson('/api/two-factor/send-email-login',
+            ['email' => 'judy@example.com', 'authRequestId' => $id, 'authRequestAccessCode' => 'access-code', ...$changes], ['Device-Type' => $deviceType]);
+
+        $approved = $request($this->user, true);
+        $send($approved, ['authRequestAccessCode' => null])->assertStatus(400)->assertJsonPath('message', 'no auth request access code');
+        self::refused($send($request($this->user, null)));
+        self::refused($send($request($this->user, false)));
+        self::refused($send($request($this->user, true, '-6 minutes')));
+        self::refused($send($request($this->user, true, used: true)));
+        self::refused($send($request($other, true)));
+        self::refused($send($approved, ['authRequestAccessCode' => 'wrong']));
+        self::refused($send($approved, deviceType: '9'));
+        $this->assertSame([], $this->mails->sent);
+
+        $send($approved)->assertStatus(200);
+        $this->assertCount(1, $this->mails->sent);
+    }
+
+    #[Parity('config:TWO_FACTOR_REMEMBER_DAYS')]
+    public function test_remembering_for_the_configured_days(): void
+    {
+        $secret = $this->storeAuthenticator();
+        self::awayFromStepBoundary();
+        $lifetime = function (string $token): int {
+            $claims = json_decode((string) base64_decode(strtr(explode('.', $token)[1], '-_', '+/')), true);
+            $this->assertIsArray($claims);
+            $this->assertIsInt($claims['exp']);
+            $this->assertIsInt($claims['nbf']);
+
+            return $claims['exp'] - $claims['nbf'];
+        };
+
+        $token = $this->string($this->login(['two_factor_provider' => '0', 'two_factor_token' => AuthenticatorController::totp($secret, time()), 'two_factor_remember' => '1'])
+            ->assertStatus(200)->json('TwoFactorToken'));
+        $this->assertSame(30 * 86_400, $lifetime($token));
+
+        // Vaultwarden 0dbc92f2: TWO_FACTOR_REMEMBER_DAYS.
+        $this->changeVaultwardenEnvironment(['TWO_FACTOR_REMEMBER_DAYS' => '7']);
+        $token = $this->string($this->login(['two_factor_provider' => '5', 'two_factor_token' => $token, 'two_factor_remember' => '1'])
+            ->assertStatus(200)->json('TwoFactorToken'));
+        $this->assertSame(7 * 86_400, $lifetime($token));
+    }
+
     public function test_protected_actions(): void
     {
         $this->postJson('/api/accounts/request-otp', [], $this->session)->assertStatus(200);
@@ -275,6 +338,14 @@ class TwoFactorTest extends TestCase
     /**
      * An authenticator whose codes were never used; returns its secret.
      */
+    /**
+     * @param  TestResponse<Response>  $response
+     */
+    private static function refused(TestResponse $response): void
+    {
+        $response->assertStatus(400)->assertJsonPath('message', "AuthRequest doesn't exist");
+    }
+
     private function storeAuthenticator(): string
     {
         $key = Random::base32(20);

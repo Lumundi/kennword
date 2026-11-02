@@ -3,7 +3,7 @@
 Vaultwarphpen takes Vaultwarden's settings, under the same names, with the same defaults and the same
 validation. Vaultwarden's documentation therefore applies:
 
-- [`.env.template`](https://github.com/dani-garcia/vaultwarden/blob/64ae55ceb2e33aa08e7291d50ca010c679064842/.env.template)
+- [`.env.template`](https://github.com/dani-garcia/vaultwarden/blob/6ed6921cc2b0e03b4d74189574d2a5e71c512e97/.env.template)
   of the pinned commit lists every setting with its description
 - the [Vaultwarden wiki](https://github.com/dani-garcia/vaultwarden/wiki) explains them in depth
 

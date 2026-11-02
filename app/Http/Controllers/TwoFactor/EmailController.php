@@ -12,18 +12,19 @@ use App\Http\Data\PasswordOrOtpData;
 use App\Http\EmptyResponse;
 use App\Http\Json;
 use App\Mail\Mail;
+use App\Models\AuthRequest;
 use App\Models\Event;
 use App\Models\TwoFactor;
 use App\Models\TwoFactorIncomplete;
 use App\Models\User;
 use App\Support\CheckedInt;
+use App\Support\Dates;
 use App\Support\EscapeDebug;
 use App\Support\JsonValue;
 use App\Support\Random;
 use App\Support\RateLimiter;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\DB;
 use stdClass;
 
 /**
@@ -73,13 +74,13 @@ final readonly class EmailController
                     throw ApiError::message('Username or password is incorrect. Try again', logMessage: "IP: {$ip}. Username: {$logged}.");
                 }
             } elseif ($authRequestId !== null) {
-                $authRequest = DB::table('auth_requests')->where('uuid', $authRequestId)->first()
-                    ?? throw ApiError::message("AuthRequest doesn't exist", logMessage: 'User not found');
                 $authRequestAccessCode ?? throw ApiError::message('no auth request access code');
-                $requestType = $authRequest->device_type ?? null;
-                if (! is_numeric($requestType) || (int) $requestType !== $deviceType || ($authRequest->request_ip ?? null) !== $ip
-                    || ! is_string($authRequest->access_code ?? null) || ! hash_equals($authRequest->access_code, $authRequestAccessCode)) {
-                    throw ApiError::message("AuthRequest doesn't exist", logMessage: 'Invalid device, IP or code');
+                $authRequest = AuthRequest::findByUuidAndUser($authRequestId, $user->uuid)
+                    ?? throw ApiError::message("AuthRequest doesn't exist", logMessage: 'Invalid auth request or does not belong to user');
+                $expired = Dates::now() >= $authRequest->creation_date->modify('+5 minutes');
+                if ($authRequest->approved !== true || $authRequest->authentication_date !== null || $expired
+                    || $authRequest->device_type !== $deviceType || $authRequest->request_ip !== $ip || ! $authRequest->checkAccessCode($authRequestAccessCode)) {
+                    throw ApiError::message("AuthRequest doesn't exist", logMessage: 'Auth request not approved, already used or expired, or invalid device, IP or code');
                 }
             } elseif ($deviceIdentifier !== null) {
                 // Mobile SSO logins send the address and the device, but no password.

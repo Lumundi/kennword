@@ -38,6 +38,38 @@ class RegistrationTest extends DifferentialTestCase
         $this->assertSameResponses('POST', '/identity/accounts/register/send-verification-email', ['Accept' => 'text/plain, application/json'], $body);
     }
 
+    /**
+     * Vaultwarden 42660af7: the link of the verification mail asks whether it still leads to a registration.
+     */
+    #[Parity('route:POST /identity/accounts/register/verification-email-clicked')]
+    public function test_verification_email_clicked(): void
+    {
+        $token = fn (string $email, bool $verified, int $exp = 1800): string => $this->signedToken('register_verify',
+            ['nbf' => time() - 60, 'exp' => time() + $exp, 'iss' => '', 'sub' => $email, 'name' => null, 'verified' => $verified]);
+        $verified = $token('Clicked@Example.com', true);
+        $unverified = $token('clicked@example.com', false);
+        $expired = $token('clicked@example.com', true, -3600);
+        $registered = $token('clicked-registered@example.com', true);
+
+        $this->assertSameFlows(function (Server $server) use ($verified, $unverified, $expired, $registered): array {
+            LoginTest::register($server, 'clicked-registered@example.com');
+            $clicked = '/identity/accounts/register/verification-email-clicked';
+            $steps = [];
+
+            $steps['verified'] = $server->json('POST', $clicked, ['email' => 'clicked@example.com', 'emailVerificationToken' => $verified]);
+            $steps['unverified'] = $server->json('POST', $clicked, ['email' => 'clicked@example.com', 'emailVerificationToken' => $unverified]);
+            $steps['expired'] = $server->json('POST', $clicked, ['email' => 'clicked@example.com', 'emailVerificationToken' => $expired]);
+            $steps['other email'] = $server->json('POST', $clicked, ['email' => 'other@example.com', 'emailVerificationToken' => $verified]);
+            $steps['not a token'] = $server->json('POST', $clicked, ['email' => 'clicked@example.com', 'emailVerificationToken' => 'nope']);
+            $steps['registered'] = $server->json('POST', $clicked, ['email' => 'clicked-registered@example.com', 'emailVerificationToken' => $registered]);
+            $steps['without token'] = $server->json('POST', $clicked, ['email' => 'clicked@example.com']);
+            $token = $server->json('POST', '/identity/accounts/register/send-verification-email', ['email' => 'clicked-new@example.com'], ['Accept' => 'application/json'])->json();
+            $steps['token of the server'] = $server->json('POST', $clicked, ['email' => 'clicked-new@example.com', 'emailVerificationToken' => $token]);
+
+            return $steps;
+        });
+    }
+
     #[Parity('route:POST /identity/accounts/register/finish')]
     public function test_registration_with_the_old_format(): void
     {

@@ -136,6 +136,19 @@ class TwoFactorTest extends DifferentialTestCase
             $steps['send login code with the password'] = $server->json('POST', '/api/two-factor/send-email-login', ['email' => '2fa-mail@example.com', 'masterPasswordHash' => 'client-hash']);
             [$steps['second login code mail']] = self::codeMail($server, '2fa-other@example.com');
 
+            // Vaultwarden acb574b7: a login request stands in for the password once it is approved.
+            $asking = ['Accept' => 'application/json', 'Device-Type' => '25'];
+            $id = $server->json('POST', '/api/auth-requests', ['accessCode' => 'access-code', 'deviceIdentifier' => LoginTest::DEVICE, 'email' => '2fa-mail@example.com',
+                'publicKey' => 'device-public-key', 'type' => 0], $asking)->jsonString('id');
+            $byRequest = ['email' => '2fa-mail@example.com', 'authRequestId' => $id, 'authRequestAccessCode' => 'access-code'];
+            $steps['send login code for an unapproved request'] = $server->json('POST', '/api/two-factor/send-email-login', $byRequest, $asking);
+            $server->json('PUT', "/api/auth-requests/{$id}", ['deviceIdentifier' => LoginTest::DEVICE, 'key' => '4.key', 'masterPasswordHash' => null, 'requestApproved' => true], $auth);
+            $steps['send login code without the access code'] = $server->json('POST', '/api/two-factor/send-email-login', [...$byRequest, 'authRequestAccessCode' => null], $asking);
+            $steps['send login code with a wrong access code'] = $server->json('POST', '/api/two-factor/send-email-login', [...$byRequest, 'authRequestAccessCode' => 'nope'], $asking);
+            $steps['send login code from another device type'] = $server->json('POST', '/api/two-factor/send-email-login', $byRequest, [...$asking, 'Device-Type' => '10']);
+            $steps['send login code for an approved request'] = $server->json('POST', '/api/two-factor/send-email-login', $byRequest, $asking);
+            [$steps['request login code mail']] = self::codeMail($server, '2fa-other@example.com');
+
             $steps['recovery code with a wrong password'] = $server->json('POST', '/api/two-factor/get-recover', ['masterPasswordHash' => 'wrong'], $auth);
             $steps['recovery code'] = $recover = $server->json('POST', '/api/two-factor/get-recover', $password, $auth);
             $steps['login with a wrong recovery code'] = $server->form('/identity/connect/token', [...$login, 'two_factor_provider' => '8', 'two_factor_token' => 'nope']);

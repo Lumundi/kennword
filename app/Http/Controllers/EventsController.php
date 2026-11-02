@@ -132,8 +132,8 @@ final readonly class EventsController
                 if ($orgId !== null && $membership !== null) {
                     Event::logImpl($type, $membership->uuid, $orgId, $user->uuid, $headers->device->atype, $date, $headers->ip);
                 }
-            } elseif (($type >= 1107 && $type <= 1114) || $type === 1117 || ($type >= 1119 && $type <= 1132)) {
-                // Cipher events of the client (viewed, copied, toggled, autofilled) go to the cipher's organization.
+            } elseif (($type >= 1107 && $type <= 1114) || $type === 1117 || ($type >= 1119 && $type <= 1133)) {
+                // Cipher events of the client (viewed, copied, toggled, autofilled, HTTP auth) go to the cipher's organization.
                 $cipher = $event['cipherId'] === null ? null : Cipher::findByUuid($event['cipherId']);
                 if ($event['cipherId'] !== null && $cipher !== null && $cipher->isAccessibleToUser($user->uuid) && $cipher->organization_uuid !== null) {
                     Event::logImpl($type, $event['cipherId'], $cipher->organization_uuid, $user->uuid, $headers->device->atype, $date, $headers->ip);

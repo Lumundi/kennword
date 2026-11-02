@@ -132,6 +132,9 @@ class MigrationTest extends TestCase
         $this->ok($this->put('owner', "/api/organizations/{$org}/policies/1", ['policy' => ['enabled' => true, 'data' => ['minComplexity' => 2, 'minLength' => 12]]]));
         $this->ok($this->put('owner', "/api/organizations/{$org}/policies/2", ['policy' => ['enabled' => true, 'data' => ['useUpper' => true, 'minLength' => 14]]]));
         $this->ok($this->put('owner', "/api/organizations/{$org}/policies/8", ['policy' => ['enabled' => true, 'data' => ['autoEnrollEnabled' => false]]]));
+        // Fill Assist (Vaultwarden 1.37.5) needs the single organization policy.
+        $this->ok($this->put('owner', "/api/organizations/{$org}/policies/3", ['policy' => ['enabled' => true, 'data' => null]]));
+        $this->ok($this->put('owner', "/api/organizations/{$org}/policies/22", ['policy' => ['enabled' => true, 'data' => ['rulesUrl' => 'https://rules.example/feed']]]));
         $this->ok($this->put('member', "/api/organizations/{$org}/users/{$this->installation->string('member.id')}/reset-password-enrollment",
             ['resetPasswordKey' => '4.reset-key', 'masterPasswordHash' => $this->password('member')]));
         $this->installation->set('org.key', $this->ok($this->post('owner', "/api/organizations/{$org}/api-key", ['masterPasswordHash' => $this->password('owner')]))->jsonString('apiKey'));

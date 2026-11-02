@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Auth\Jwt;
 use App\Auth\JwtIssuer;
+use App\Config\Config;
 use App\Http\ApiError;
 use App\Http\Json;
 use App\Models\Casts\NaiveDateTime;
@@ -87,7 +88,8 @@ final class Device extends Model
     }
 
     /**
-     * A new "remember this device" token for two-factor login, valid for 30 days.
+     * A new "remember this device" token for two-factor login, valid for
+     * TWO_FACTOR_REMEMBER_DAYS.
      */
     public function refreshTwofactorRemember(): string
     {
@@ -97,7 +99,7 @@ final class Device extends Model
         // TwoFactorRememberClaims
         $token = $jwt->encode([
             'nbf' => $now,
-            'exp' => $now + 30 * 86_400,
+            'exp' => $now + app(Config::class)->int('two_factor_remember_days') * 86_400,
             'iss' => $jwt->issuer(JwtIssuer::TwoFactorRemember),
             'sub' => $this->uuid,
             'user_uuid' => $this->user_uuid,

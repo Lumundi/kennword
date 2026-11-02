@@ -364,15 +364,20 @@ final class Send extends Model
             if ($send->atype !== self::TYPE_FILE) {
                 continue;
             }
-            // FileData { size (alias Size): NumberOrString }; Sends without it do not count.
+            // FileData { size: NumberOrString }, which as a derived struct also reads
+            // from a sequence; Sends without it do not count.
             [$ok, $data] = JsonValue::decode($send->data);
-            $fields = $ok && $data instanceof stdClass ? get_object_vars($data) : [];
-            $sizes = array_values(array_intersect_key($fields, ['size' => true, 'Size' => true]));
-            if (count($sizes) !== 1 || (! is_int($sizes[0]) && ! is_string($sizes[0]))) {
+            $size = match (true) {
+                ! $ok => null,
+                $data instanceof stdClass => $data->size ?? null,
+                is_array($data) && array_is_list($data) && count($data) === 1 => $data[0],
+                default => null,
+            };
+            if (! is_int($size) && ! is_string($size)) {
                 continue;
             }
             try {
-                $size = NumberOrString::intoI64($sizes[0]);
+                $size = NumberOrString::intoI64($size);
             } catch (ApiError) {
                 continue;
             }

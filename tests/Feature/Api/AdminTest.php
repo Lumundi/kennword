@@ -326,7 +326,7 @@ class AdminTest extends TestCase
         }
         $data = json_decode($match[1], true);
         $this->assertIsArray($data);
-        $this->assertSame('Vaultwarphpen '.Release::installed().' (Vaultwarden 1.37.4)', $data['current_release']);
+        $this->assertSame('Vaultwarphpen '.Release::installed().' (Vaultwarden 1.37.5)', $data['current_release']);
         $this->assertSame(['-', '-', '-'], [$data['latest_release'], $data['latest_commit'], $data['latest_web_release']]);
         $this->assertFalse($data['has_http_access']);
         $this->assertSame('Unable to fetch NTP time.', $data['ntp_time']);
@@ -381,6 +381,7 @@ class AdminTest extends TestCase
         // The web vault's catch-all refuses hidden files: its guard forwards, and no route is left.
         $this->get('/vw_static/../.env')->assertStatus(422);
         $this->get('/vw_static/admin')->assertStatus(400)->assertJsonPath('message', 'Static file not found: admin');
+        $this->get("/vw_static/o'neil%09%22.js")->assertStatus(400)->assertJsonPath('message', 'Static file not found: o\\\'neil\\t\\".js');
     }
 
     /**

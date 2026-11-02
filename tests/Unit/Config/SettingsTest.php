@@ -55,7 +55,7 @@ class SettingsTest extends TestCase
             $checked++;
         }
 
-        $this->assertSame(108, $checked);
+        $this->assertSame(110, $checked);
     }
 
     public function test_computed_defaults_are_closures(): void

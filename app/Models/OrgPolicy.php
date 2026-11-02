@@ -45,10 +45,12 @@ final class OrgPolicy extends Model
 
     public const int TYPE_RESET_PASSWORD = 8;
 
+    public const int TYPE_FILL_ASSIST = 22;
+
     /**
      * OrgPolicyType: the types Vaultwarden supports.
      */
-    public const array TYPES = [0, 1, 2, 3, 5, 6, 7, 8, 14, 15, 16, 17, 20];
+    public const array TYPES = [0, 1, 2, 3, 5, 6, 7, 8, 14, 15, 16, 17, 20, 22];
 
     protected $table = 'org_policies';
 
@@ -302,7 +304,7 @@ final class OrgPolicy extends Model
             }
             $member->revoke();
             $member->save();
-            Event::log(Event::ORGANIZATION_USER_REVOKED, $member->uuid, $member->org_uuid, $actUserUuid, $deviceType, $ip);
+            Event::log(Event::ORGANIZATION_USER_REVOKED_TWO_FACTOR_NON_COMPLIANCE, $member->uuid, $member->org_uuid, $actUserUuid, $deviceType, $ip);
         }
     }
 
@@ -325,7 +327,7 @@ final class OrgPolicy extends Model
             }
             $member->revoke();
             $member->save();
-            Event::log(Event::ORGANIZATION_USER_REVOKED, $member->uuid, $member->org_uuid, $actUserUuid, $deviceType, $ip);
+            Event::log(Event::ORGANIZATION_USER_REVOKED_TWO_FACTOR_NON_COMPLIANCE, $member->uuid, $member->org_uuid, $actUserUuid, $deviceType, $ip);
         }
     }
 

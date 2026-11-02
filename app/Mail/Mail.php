@@ -77,7 +77,7 @@ final class Mail
     {
         // The anchor comes before the query, which a URL builder would not do.
         self::send('email/register_verify_email', $email, [
-            'url' => self::domain().'/#/finish-signup/?'.self::query(['email' => $email, 'token' => $token]),
+            'url' => self::domain().'/#/finish-signup/?'.self::query(['email' => $email, 'token' => $token, 'fromEmail' => 'true']),
             'email' => $email,
         ]);
     }
