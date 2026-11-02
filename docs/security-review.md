@@ -1,6 +1,9 @@
 # Security review, October 2026
 
-A review of Vaultwarphpen's PHP code before people trust it with real passwords. It asked one question
+> Kennword was called Vaultwarphpen until version 0.2.0. The reviews below were made under that name;
+> the commits and releases they name are the same.
+
+A review of Kennword's PHP code before people trust it with real passwords. It asked one question
 above all: wherever Vaultwarden checks something, does the port check the same thing, the same way?
 
 This was an internal review, carried out with an AI coding assistant (Claude Code) and read against
@@ -9,7 +12,7 @@ says as much about what may still be there as about what is gone.
 
 ## Scope
 
-- Vaultwarphpen at commit `f8078eb` (main, 28 October 2026), compared with Vaultwarden commit
+- Kennword at commit `f8078eb` (main, 28 October 2026), compared with Vaultwarden commit
   [`0f44744`](https://github.com/dani-garcia/vaultwarden/commit/0f44744ef86a2a7bea615af1c024044ce5736187)
   (release 1.37.4), the pin of `parity/reference.json`.
 - All of `app/`: the request guards and tokens, every route, two-step login, organizations, collections
@@ -154,7 +157,7 @@ takes 128 requests at a time and drops one that sends an unsigned line. Tests: `
 Findings that are not fixed are not described here while they are open; the maintainers have the
 details. Please report anything new privately, as [SECURITY.md](../SECURITY.md) describes.
 
-- **In Vaultwarphpen only:** none left; the hardening of the daemon's channel is fixed (16 below).
+- **In Kennword only:** none left; the hardening of the daemon's channel is fixed (16 below).
 - **Shared with Vaultwarden:** eleven weaknesses of Vaultwarden's own behaviour, most of them of low
   severity. The port keeps Vaultwarden's behaviour until the maintainers decide otherwise; they belong
   reported to Vaultwarden first.
@@ -204,7 +207,7 @@ Notes without a security impact:
 
 ## Second review, 29 October 2026
 
-A second internal review looked at Vaultwarphpen 0.1.2 (`a585061`) without knowing the first: eight
+A second internal review looked at Kennword 0.1.2 (`a585061`) without knowing the first: eight
 reviewers, one per area, each an instance of the same AI coding assistant, none of which could read this
 document or the git history. Each started a Vaultwarden next to the port, sent the same requests to both
 and reported only what it reproduced on the running servers. The maintainers' session reproduced the

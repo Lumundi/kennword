@@ -1,8 +1,10 @@
-# Vaultwarphpen
+# Kennword
 
 A feature-equivalent PHP implementation of [Vaultwarden](https://github.com/dani-garcia/vaultwarden),
 built on Laravel 13. The goal is a drop-in replacement: same HTTP API, same database, same
 environment variables, so the official Bitwarden clients and existing Vaultwarden data keep working.
+It was called Vaultwarphpen until version 0.2.0; the repository is github.com/Lumundi/kennword, the
+Composer package `lumundi/kennword`.
 
 ## Environment
 
@@ -10,7 +12,7 @@ environment variables, so the official Bitwarden clients and existing Vaultwarde
   Herd's PHP 8.6: `"$HOME/Library/Application Support/Herd/bin/php86"` (shown as `php86` below).
 - Tests: `php86 artisan test`. To include MySQL, point `VW_TEST_MYSQL_DATABASE` (or
   `VW_TEST_PGSQL_DATABASE`) at an empty database that the tests may wipe, e.g.
-  `VW_TEST_MYSQL_DATABASE=vaultwarphpen_test php86 artisan test`.
+  `VW_TEST_MYSQL_DATABASE=kennword_test php86 artisan test`.
 - Static analysis (PHPStan, max level, PHP 8.5): `php86 vendor/bin/phpstan analyse --memory-limit=1G`.
 - Code style: `php86 vendor/bin/pint`.
 - Differential tests (`tests/Differential`) send the same requests to Vaultwarden and to us and
@@ -150,10 +152,10 @@ Everything is measured against one pinned Vaultwarden commit.
   library's behaviour adds it there, with the license text when the license asks for it. After a
   Composer change, update its package tables; `tests/Unit/NoticeTest` compares them with `composer.lock`
   and checks that every directory `parity:sync` fills is named.
-- Where Vaultwarden names itself to clients (the `server` object of `/api/config`), we name Vaultwarphpen
+- Where Vaultwarden names itself to clients (the `server` object of `/api/config`), we name Kennword
   and link to this repository: users must be able to find the source of the server they talk to (AGPL
   section 13), and bug reports must not land at Vaultwarden. Copied templates and setting defaults stay
-  as they are. The same holds for the diagnostics of the admin panel: they name Vaultwarphpen with the
+  as they are. The same holds for the diagnostics of the admin panel: they name Kennword with the
   Vaultwarden release it mirrors (`App\Support\Release`), look for newer versions in this repository and
   show PHP's runtime instead of Rust's; the differential test compares that page by its structure only.
 

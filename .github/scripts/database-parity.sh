@@ -12,7 +12,7 @@
 #
 # Usage: database-parity.sh <vaultwarden binary> <sqlite|mysql|pgsql>...
 # MySQL and PostgreSQL must listen on 127.0.0.1 with user root and no password;
-# the script creates the databases parity_vaultwarden and parity_vaultwarphpen
+# the script creates the databases parity_vaultwarden and parity_kennword
 # there and fails if they exist. It is meant for the throwaway CI services.
 
 set -euo pipefail
@@ -86,12 +86,12 @@ for connection in "$@"; do
         mysql)
             dialect=mysql
             theirs=parity_vaultwarden theirs_url="mysql://root@127.0.0.1:3306/parity_vaultwarden"
-            ours=parity_vaultwarphpen ours_url="mysql://root@127.0.0.1:3306/parity_vaultwarphpen"
+            ours=parity_kennword ours_url="mysql://root@127.0.0.1:3306/parity_kennword"
             ;;
         pgsql)
             dialect=postgresql
             theirs=parity_vaultwarden theirs_url="postgresql://root@127.0.0.1:5432/parity_vaultwarden"
-            ours=parity_vaultwarphpen ours_url="postgresql://root@127.0.0.1:5432/parity_vaultwarphpen"
+            ours=parity_kennword ours_url="postgresql://root@127.0.0.1:5432/parity_kennword"
             ;;
         *)
             echo "Unknown database type ${connection}." >&2

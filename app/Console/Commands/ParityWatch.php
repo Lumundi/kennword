@@ -31,7 +31,7 @@ class ParityWatch extends Command
     protected $signature = 'parity:watch
         {--issues : Open, update and close the GitHub issues of the findings}
         {--source=* : Only these sources}
-        {--repository= : The repository of the issues, by default $GITHUB_REPOSITORY or Vaultwarphpen\'s}';
+        {--repository= : The repository of the issues, by default $GITHUB_REPOSITORY or Kennword\'s}';
 
     /**
      * @var string

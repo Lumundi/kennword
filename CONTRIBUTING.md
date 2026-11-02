@@ -1,6 +1,6 @@
 # Contributing
 
-Thank you for helping. Vaultwarphpen has one goal: to behave exactly like the pinned Vaultwarden
+Thank you for helping. Kennword has one goal: to behave exactly like the pinned Vaultwarden
 version, so that the official Bitwarden clients and existing Vaultwarden data keep working.
 
 ## Before you start
@@ -14,7 +14,7 @@ version, so that the official Bitwarden clients and existing Vaultwarden data ke
 ## Making a change
 
 - Port the behaviour from Vaultwarden's source at the pinned commit; do not invent behaviour of your own.
-  Where Vaultwarphpen has to differ, say so in the matrix note and in
+  Where Kennword has to differ, say so in the matrix note and in
   [docs/configuration.md](docs/configuration.md).
 - Write a test for every item you mark as done, and a differential test for every route (see
   AGENTS.md).
@@ -36,7 +36,7 @@ version, so that the official Bitwarden clients and existing Vaultwarden data ke
 
 ## License of contributions
 
-Vaultwarphpen is licensed under the AGPL-3.0-only. By contributing, you agree that your contribution is
+Kennword is licensed under the AGPL-3.0-only. By contributing, you agree that your contribution is
 licensed under the same license. There is no contributor license agreement; you keep the copyright of
 your work.
 

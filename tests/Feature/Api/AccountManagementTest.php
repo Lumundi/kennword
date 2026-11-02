@@ -46,7 +46,7 @@ class AccountManagementTest extends TestCase
     {
         $this->signUp('sqlite');
         $config = $this->get('/api/config')->assertStatus(200);
-        $config->assertJsonPath('server', ['name' => 'Vaultwarphpen', 'url' => 'https://github.com/christianrudde/vaultwarphpen'])
+        $config->assertJsonPath('server', ['name' => 'Kennword', 'url' => 'https://github.com/Lumundi/kennword'])
             ->assertJsonPath('settings.suppressOnboardingInterstitials', true)
             ->assertJsonPath('environment.api', 'http://localhost/api')
             ->assertJsonPath('featureStates', ['pm-19148-innovation-archive' => true, 'ssh-agent-v2' => true])

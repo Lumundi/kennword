@@ -131,7 +131,7 @@ final class SoftwareAuthenticator
     {
         $key = self::ecKey();
         $subject = $format === 'packed-x5c'
-            ? ['countryName' => 'DE', 'organizationName' => 'Vaultwarphpen', 'organizationalUnitName' => 'Authenticator Attestation', 'commonName' => 'Test key']
+            ? ['countryName' => 'DE', 'organizationName' => 'Kennword', 'organizationalUnitName' => 'Authenticator Attestation', 'commonName' => 'Test key']
             : ['commonName' => 'U2F test key'];
         $config = (string) tempnam(sys_get_temp_dir(), 'openssl');
         file_put_contents($config, "[req]\ndistinguished_name=dn\n[dn]\n[ext]\nbasicConstraints=critical,CA:FALSE\n");

@@ -258,7 +258,7 @@ class AdminTest extends DifferentialTestCase
     }
 
     /**
-     * The diagnostics name Vaultwarphpen and check its own repository, so the
+     * The diagnostics name Kennword and check its own repository, so the
      * page is compared by its structure: the same elements and data keys.
      */
     #[Parity('route:GET /admin/diagnostics')]

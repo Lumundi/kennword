@@ -1,13 +1,13 @@
 # Configuration
 
-Vaultwarphpen takes Vaultwarden's settings, under the same names, with the same defaults and the same
+Kennword takes Vaultwarden's settings, under the same names, with the same defaults and the same
 validation. Vaultwarden's documentation therefore applies:
 
 - [`.env.template`](https://github.com/dani-garcia/vaultwarden/blob/6ed6921cc2b0e03b4d74189574d2a5e71c512e97/.env.template)
   of the pinned commit lists every setting with its description
 - the [Vaultwarden wiki](https://github.com/dani-garcia/vaultwarden/wiki) explains them in depth
 
-This page covers where the settings come from and where Vaultwarphpen differs.
+This page covers where the settings come from and where Kennword differs.
 
 ## Where settings come from
 
@@ -65,7 +65,7 @@ The `config:` items in [PARITY.md](../PARITY.md) show the state of each setting 
   channel: `trace` and `debug` become Laravel's `debug`, `warn` becomes `warning`, and `off` turns the
   log off. Levels for single modules, as in `info,vaultwarden::api::icons=debug`, are checked like
   Vaultwarden does, but only the first level counts. The lines look like Vaultwarden's
-  (`EXTENDED_LOGGING`, `LOG_TIMESTAMP_FORMAT`), with `vaultwarphpen` where Vaultwarden names its Rust
+  (`EXTENDED_LOGGING`, `LOG_TIMESTAMP_FORMAT`), with `kennword` where Vaultwarden names its Rust
   module. `LOG_FILE` adds a file and `USE_SYSLOG` the syslog (as `vaultwarden`, facility user), as in
   Vaultwarden; a file is not reopened on `SIGHUP`, which PHP does not need.
 - **Scheduled jobs** run in a process of their own (`php artisan vaultwarden:schedule`) or from cron
@@ -75,7 +75,7 @@ The `config:` items in [PARITY.md](../PARITY.md) show the state of each setting 
 - **Live notifications** over WebSocket come from a daemon of their own (`php artisan
   vaultwarden:notifications`), to which the web server passes `/notifications/`
   ([Installation](installation.md#live-notifications)). Requests reach it through a socket in the data
-  folder, or at `NOTIFICATIONS_SOCKET`, a setting of Vaultwarphpen's (`unix:///path` or
+  folder, or at `NOTIFICATIONS_SOCKET`, a setting of Kennword's (`unix:///path` or
   `tcp://host:port`, on a loopback or other non-public address) for both sides. `ENABLE_WEBSOCKET=false`
   keeps the daemon from starting.
 - **Push notifications** (`PUSH_*`) go to Bitwarden's relay like Vaultwarden's. The relay's access token
@@ -87,13 +87,13 @@ The `config:` items in [PARITY.md](../PARITY.md) show the state of each setting 
   apart by timing (the password hint, registration), a PHP worker waits with it; Vaultwarden's task
   waits without holding anything. The rate limits bound how many workers one address can keep busy.
 - **The server's name.** Where Vaultwarden names itself to the clients (the `server` object of
-  `/api/config`), Vaultwarphpen names itself and links to its own repository, so that users find the
+  `/api/config`), Kennword names itself and links to its own repository, so that users find the
   source of the server they use and report problems in the right place.
 - **SSO** works like Vaultwarden's ([setup guide](sso.md)), except that `SSO_DEBUG_TOKENS` logs none
   of the provider's tokens. The discovered provider is cached for `SSO_CLIENT_CACHE_EXPIRATION` seconds in Laravel's
   cache, so all PHP workers share it.
-- **The admin diagnostics** name Vaultwarphpen, with the Vaultwarden release it follows, and look for
-  newer versions in Vaultwarphpen's repository (its latest release, or the latest commit for an
+- **The admin diagnostics** name Kennword, with the Vaultwarden release it follows, and look for
+  newer versions in Kennword's repository (its latest release, or the latest commit for an
   installation from a branch). The installed version is what Composer recorded when it last installed
   the checkout, so run `composer install` after updating. The page shows PHP's version and server API
   where Vaultwarden shows Rust's runtime.
@@ -103,11 +103,11 @@ The `config:` items in [PARITY.md](../PARITY.md) show the state of each setting 
 - **The id of the user key.** Clients since 2026.10 record the id of the account's user key once
   (`POST /api/accounts/key-management/user-key-id`) and send it with new items. Vaultwarden 1.37.5 keeps
   it when the account key is rotated and then refuses the items encrypted by the new key ("Invalid key
-  cipher", reported as [dani-garcia/vaultwarden#7927](https://github.com/dani-garcia/vaultwarden/issues/7927)). Vaultwarphpen, like Bitwarden's server, takes the id of the new key from the rotation
+  cipher", reported as [dani-garcia/vaultwarden#7927](https://github.com/dani-garcia/vaultwarden/issues/7927)). Kennword, like Bitwarden's server, takes the id of the new key from the rotation
   (`newUserKeyId`), and drops the old one when the request names none, as the web vault's does, so that
-  the clients record the new one. An account whose key Vaultwarphpen rotated has no id or the new one,
+  the clients record the new one. An account whose key Kennword rotated has no id or the new one,
   which Vaultwarden reads like any other.
 - **Development routes.** Vaultwarden's debug builds serve static files from the source tree at
-  `/vw_static/`; release builds do not, and neither does Vaultwarphpen.
+  `/vw_static/`; release builds do not, and neither does Kennword.
 - **Caches.** Do not cache Laravel's configuration or routes (see
   [Installation](installation.md#things-not-to-do)).

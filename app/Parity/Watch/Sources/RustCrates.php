@@ -9,7 +9,7 @@ use App\Parity\Watch\Source;
 use Illuminate\Support\Facades\Http;
 
 /**
- * Advisories (RustSec, via OSV) for the crates whose behaviour Vaultwarphpen
+ * Advisories (RustSec, via OSV) for the crates whose behaviour Kennword
  * reproduces, in the versions of the pinned Cargo.lock. We do not run their
  * code, but a flaw in their logic is likely ported along.
  */
@@ -99,7 +99,7 @@ final readonly class RustCrates implements Source
             title: mb_strimwidth(sprintf('%s in %s %s: %s', $id, $crate, $version, Matrix::string($details['summary'] ?? '')), 0, 250, '…'),
             body: sprintf(
                 "OSV reports [%s](https://osv.dev/vulnerability/%s)%s for `%s` %s, the version in the pinned commit's `Cargo.lock`.\n\n"
-                ."Vaultwarphpen does not run this crate, but it reproduces its behaviour (NOTICE.md).\n\n"
+                ."Kennword does not run this crate, but it reproduces its behaviour (NOTICE.md).\n\n"
                 ."- [ ] Check whether the flaw is in behaviour we reproduce (for example how tokens are checked) or only in the Rust code (memory safety, panics).\n"
                 .'- [ ] If we reproduce it, follow SECURITY.md, and watch for Vaultwarden updating the crate.',
                 $id, $id, $aliases === [] ? '' : ' ('.implode(', ', $aliases).')', $crate, $version,

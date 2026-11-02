@@ -76,7 +76,7 @@ class AppConfigTest extends TestCase
 
         $log = (string) file_get_contents("{$this->base}/laravel.log");
         $this->assertStringNotContainsString('not logged', $log);
-        $this->assertStringContainsString('[vaultwarphpen][WARN] logged', $log);
+        $this->assertStringContainsString('[kennword][WARN] logged', $log);
     }
 
     #[Parity('config:EXTENDED_LOGGING')]
@@ -90,7 +90,7 @@ class AppConfigTest extends TestCase
         Log::warning('careful');
         Log::notice('noted');
 
-        $line = '\[\d{2}\.\d{2}\.\d{4} \d{2}:\d{2}:\d{2}\.\d{3} \(UTC\)\]\[vaultwarphpen\]';
+        $line = '\[\d{2}\.\d{2}\.\d{4} \d{2}:\d{2}:\d{2}\.\d{3} \(UTC\)\]\[kennword\]';
         $expected = "/^{$line}\[WARN\] careful\n{$line}\[INFO\] noted\n$/";
         $this->assertMatchesRegularExpression($expected, (string) file_get_contents("{$this->base}/laravel.log"));
         $this->assertMatchesRegularExpression($expected, (string) file_get_contents("{$this->base}/data/vaultwarden.log"));

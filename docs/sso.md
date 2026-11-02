@@ -1,12 +1,12 @@
 # Single sign-on with OpenID Connect
 
-Vaultwarphpen logs users in at an OpenID Connect provider exactly like Vaultwarden does, with the same
+Kennword logs users in at an OpenID Connect provider exactly like Vaultwarden does, with the same
 `SSO_*` settings. This page explains how to set up Microsoft Entra ID, Keycloak and Google Workspace,
 what to watch out for with each, and how to test the result.
 
 SSO replaces the login, not the encryption. The vault stays encrypted with each user's master password:
 at the first SSO login a new user sets one, and every user enters it to unlock the vault after logging
-in. Vaultwarden, and so Vaultwarphpen, has no Key Connector and no trusted devices.
+in. Vaultwarden, and so Kennword, has no Key Connector and no trusted devices.
 
 ## How the login works
 
@@ -15,7 +15,7 @@ in. Vaultwarden, and so Vaultwarphpen, has no Key Connector and no trusted devic
 2. The server redirects to the provider's login page.
 3. After the login the provider sends the browser back to `<DOMAIN>/identity/connect/oidc-signin`, the
    only redirect URI to register at the provider. `DOMAIN` must therefore be the public HTTPS address,
-   including a path if Vaultwarphpen runs below one: `https://example.com/vault` gives
+   including a path if Kennword runs below one: `https://example.com/vault` gives
    `https://example.com/vault/identity/connect/oidc-signin`. The apps need no redirect URIs of their own;
    the server passes them on.
 4. The server exchanges the code for tokens, checks the ID token and asks the user info endpoint, then
@@ -52,7 +52,7 @@ with the next request.
 | `SSO_AUDIENCE_TRUSTED` | | A regular expression for further audiences that ID tokens may name besides the client ID. |
 | `SSO_CLIENT_CACHE_EXPIRATION` | `0` | Seconds to keep the provider's discovery document and keys; `0` fetches them for every login. |
 | `SSO_MASTER_PASSWORD_POLICY` | | The master password policy for SSO users, as JSON: `{"minLength":14,"minComplexity":3,"requireUpper":true,"enforceOnLogin":true}`. |
-| `SSO_DEBUG_TOKENS` | `false` | Vaultwarden logs the provider's tokens with it; Vaultwarphpen only logs the whole of the authenticated user instead of its identifier. |
+| `SSO_DEBUG_TOKENS` | `false` | Vaultwarden logs the provider's tokens with it; Kennword only logs the whole of the authenticated user instead of its identifier. |
 
 Things that apply to every provider:
 
@@ -84,7 +84,7 @@ Things that apply to every provider:
 In the [Microsoft Entra admin center](https://entra.microsoft.com):
 
 1. *Identity → Applications → App registrations → New registration*.
-   - Name: `Vaultwarphpen`, or anything users should see.
+   - Name: `Kennword`, or anything users should see.
    - Supported account types: *Accounts in this organizational directory only (Single tenant)*.
    - Redirect URI: platform **Web** (not *Single-page application*), URI
      `https://vault.example.com/identity/connect/oidc-signin`.
@@ -93,7 +93,7 @@ In the [Microsoft Entra admin center](https://entra.microsoft.com):
    *Secret ID*) right away; it is shown only once. Note the expiry date.
 4. *API permissions*: Microsoft Graph's delegated permissions `openid`, `email`, `profile` and
    `offline_access` (and the preset `User.Read`). *Grant admin consent* spares users the consent prompt.
-5. Optional, to decide who may log in: *Enterprise applications → Vaultwarphpen → Properties →
+5. Optional, to decide who may log in: *Enterprise applications → Kennword → Properties →
    Assignment required? → Yes*, then assign users or groups under *Users and groups*.
 
 ### Settings
@@ -130,7 +130,7 @@ SSO_ALLOW_UNKNOWN_EMAIL_VERIFICATION=true
   ID issues per application. A new registration gives every user a new identity; their logins then
   fail with `Existing SSO user with same email` until *Delete SSO Association* in the admin panel
   (*Users*) lets them link again.
-- **Not tested automatically.** Vaultwarphpen's CI compares the SSO login with Vaultwarden against
+- **Not tested automatically.** Kennword's CI compares the SSO login with Vaultwarden against
   Keycloak, not against Entra ID. Please report anything that behaves differently.
 
 ## Keycloak
@@ -144,7 +144,7 @@ In the admin console of your realm:
 3. *Login settings*: *Valid redirect URIs* `https://vault.example.com/identity/connect/oidc-signin`.
 4. *Credentials*: client authenticator *Client Id and Secret*; copy the secret.
 5. Optional: the PKCE method `S256` (under *Capability config* or *Advanced → Advanced settings*,
-   depending on the version) makes PKCE mandatory; Vaultwarphpen sends it unless `SSO_PKCE=false`.
+   depending on the version) makes PKCE mandatory; Kennword sends it unless `SSO_PKCE=false`.
 
 ### Settings
 
@@ -205,7 +205,7 @@ SSO_AUTHORIZE_EXTRA_PARAMS="access_type=offline&prompt=consent"
 - **No `offline_access`.** Google refuses that scope. It issues refresh tokens for `access_type=offline`,
   and only at a consent, hence `prompt=consent` (Google then asks for consent at every login). Without
   both, users log in again after an hour.
-- **Restrict the users.** Vaultwarphpen does not check the Workspace domain (the `hd` claim). With user
+- **Restrict the users.** Kennword does not check the Workspace domain (the `hd` claim). With user
   type *External*, any Google account would pass; then turn off `SSO_SIGNUPS_ALLOWED` or set
   `SIGNUPS_DOMAINS_WHITELIST=example.com`. `hd=example.com` in `SSO_AUTHORIZE_EXTRA_PARAMS` only
   preselects the account.
@@ -259,7 +259,7 @@ otherwise) has the details.
 
 ## How this is tested
 
-The differential tests run every SSO flow against Vaultwarden and Vaultwarphpen and compare the answers:
+The differential tests run every SSO flow against Vaultwarden and Kennword and compare the answers:
 against a fake provider (`tests/Differential/SsoTest.php`) and against a real Keycloak
 (`tests/Differential/KeycloakTest.php`, with the realm of `.github/scripts/keycloak-realm.json`). The
 Keycloak tests cover sign-ups, linking by email, refresh with rotating refresh tokens, offline tokens,

@@ -1,18 +1,18 @@
 # Installation
 
-Vaultwarphpen is an ordinary Laravel application: PHP runs `public/index.php` for every request, and
+Kennword is an ordinary Laravel application: PHP runs `public/index.php` for every request, and
 the data lives in a database and a data folder. This guide sets it up on a server of your own or on a
 hosting package that gives you PHP 8.5 and a shell, with Composer or from a
 [release archive](#installing-from-a-release-archive) that needs no Composer.
 
 > [!WARNING]
-> Vaultwarphpen is in early development and has not been independently audited (see the
+> Kennword is in early development and has not been independently audited (see the
 > [security review](security-review.md)). See the status in the [README](../README.md#status) before
 > you put real data into it.
 
 ## Requirements
 
-- PHP 8.5.12 or newer (earlier 8.5 releases have security issues in the URL parser that Vaultwarphpen
+- PHP 8.5.12 or newer (earlier 8.5 releases have security issues in the URL parser that Kennword
   uses), as PHP-FPM or an Apache module, with the extensions `openssl`, `sodium` and
   `mbstring`, the ones Laravel needs (`ctype`, `filter`, `hash`, `session`, `tokenizer`) and one of
   `pdo_sqlite`, `pdo_mysql` or `pdo_pgsql`; `phar`, `zlib` and `allow_url_fopen` to download the web
@@ -23,14 +23,14 @@ hosting package that gives you PHP 8.5 and a shell, with Composer or from a
 
 ## Installing it
 
-Composer installs Vaultwarphpen with everything it needs in one step, into a new folder:
+Composer installs Kennword with everything it needs in one step, into a new folder:
 
 ```bash
-composer create-project --no-dev christianrudde/vaultwarphpen vaultwarphpen
-cd vaultwarphpen
+composer create-project --no-dev lumundi/kennword kennword
+cd kennword
 ```
 
-This takes the latest [release](https://github.com/christianrudde/vaultwarphpen/releases); add
+This takes the latest [release](https://github.com/Lumundi/kennword/releases); add
 `dev-main` after the folder for the current state of `main`. After the PHP dependencies, Composer sets
 up:
 
@@ -44,8 +44,8 @@ and run the remaining steps by hand, in the order above.
 From a Git checkout, the same steps are:
 
 ```bash
-git clone https://github.com/christianrudde/vaultwarphpen.git
-cd vaultwarphpen
+git clone https://github.com/Lumundi/kennword.git
+cd kennword
 composer install --no-dev --optimize-autoloader
 cp .env.example .env
 php artisan key:generate
@@ -55,21 +55,21 @@ php artisan vaultwarden:web-vault
 
 ## Installing from a release archive
 
-For hosts without Composer, the releases on [GitHub](https://github.com/christianrudde/vaultwarphpen/releases)
+For hosts without Composer, the releases on [GitHub](https://github.com/Lumundi/kennword/releases)
 come as archives that hold everything: the code, its PHP dependencies in `vendor/` and the web vault in
-`web-vault/`. Take `vaultwarphpen-<version>.tar.gz`, or `vaultwarphpen-<version>.zip` if your host
-unpacks only zip files, and check it against `vaultwarphpen-<version>.sha256` next to it:
+`web-vault/`. Take `kennword-<version>.tar.gz`, or `kennword-<version>.zip` if your host
+unpacks only zip files, and check it against `kennword-<version>.sha256` next to it:
 
 ```bash
-sha256sum --check --ignore-missing vaultwarphpen-1.0.0.sha256
+sha256sum --check --ignore-missing kennword-1.0.0.sha256
 ```
 
-(On macOS: `shasum -a 256 --check --ignore-missing vaultwarphpen-1.0.0.sha256`.) You can also build the
+(On macOS: `shasum -a 256 --check --ignore-missing kennword-1.0.0.sha256`.) You can also build the
 archive of any commit [yourself](#building-an-archive).
 
 1. Unpack the archive on the server, or unpack it on your computer and upload the folder
-   `vaultwarphpen-<version>` it holds (by SFTP, FTP or the host's file manager). Rename the folder as you
-   like, `vaultwarphpen` below. Only its `public` folder is served: keep the folder itself out of the
+   `kennword-<version>` it holds (by SFTP, FTP or the host's file manager). Rename the folder as you
+   like, `kennword` below. Only its `public` folder is served: keep the folder itself out of the
    document root and point the document root at `public` (see [Web server](#web-server)).
 2. Let the user PHP runs as write to `data/`, `storage/` and `bootstrap/cache/` (see
    [Permissions](#permissions)). Uploaded by FTP, the files usually belong to that user already.
@@ -102,7 +102,7 @@ It takes a tag, branch or commit (the last one by default; changes that are not 
 clones it, installs the dependencies with `composer install --no-dev --optimize-autoloader`, installs
 the web vault with `php artisan vaultwarden:web-vault`, leaves out what only development needs (the
 tests, the CI files, the parity matrix and schema snapshots, the tool settings) and writes
-`build/vaultwarphpen-<version>.tar.gz`, `.zip` and `.sha256`. The version is the tag without its `v`, or
+`build/kennword-<version>.tar.gz`, `.zip` and `.sha256`. The version is the tag without its `v`, or
 the first 8 characters of the commit. Next to them it puts the source of the web vault, which the GPL-3.0
 asks to go along with it: GitHub's archives of the tags that `web_vault_source` in `parity/reference.json`
 pins, as `web-vault-<version>-source-*.tar.gz` (see [NOTICE.md](../NOTICE.md#web-vault)); the `.sha256`
@@ -136,7 +136,7 @@ php artisan vaultwarden:migrate
 
 ## Web vault
 
-The Bitwarden web vault is not part of this repository. Vaultwarphpen serves the one Vaultwarden's
+The Bitwarden web vault is not part of this repository. Kennword serves the one Vaultwarden's
 Docker images ship: Vaultwarden's build of it ([bw_web_builds](https://github.com/dani-garcia/bw_web_builds)),
 in the version and image that Vaultwarden's Dockerfile pins (`web_vault` and `web_vault_digest` in
 [`parity/reference.json`](../parity/reference.json)). The installation puts it into `WEB_VAULT_FOLDER`
@@ -197,15 +197,15 @@ expose_php = Off           ; Vaultwarden sends no X-Powered-By header
 display_errors = Off       ; errors belong in the log, not in responses
 ```
 
-PHP stores the files of a multipart request in `upload_tmp_dir` before Vaultwarphpen sees the request,
+PHP stores the files of a multipart request in `upload_tmp_dir` before Kennword sees the request,
 whoever sends it and to whichever address; Vaultwarden reads a body only for a route that takes one, after
 checking the login. Keep `upload_tmp_dir` on a disk with room for a few uploads rather than in memory, and
 let the web server limit the size of a request (`client_max_body_size` and `LimitRequestBody` below).
-Vaultwarphpen itself refuses JSON bodies above 20 MB and forms above 32 KiB with 413, like Vaultwarden.
+Kennword itself refuses JSON bodies above 20 MB and forms above 32 KiB with 413, like Vaultwarden.
 
 ## Web server
 
-The document root is the `public` folder. Serve Vaultwarphpen from the root of a (sub)domain of its own,
+The document root is the `public` folder. Serve Kennword from the root of a (sub)domain of its own,
 such as `vault.example.com`. A path in `DOMAIN` (`https://example.com/vault`) mounts every route below
 it, as in Vaultwarden; the web server then has to pass `/vault/...` to `public/index.php` without
 stripping the prefix.
@@ -216,7 +216,7 @@ stripping the prefix.
 server {
     listen 443 ssl;
     server_name vault.example.com;
-    root /var/www/vaultwarphpen/public;
+    root /var/www/kennword/public;
 
     # ssl_certificate ...;
 
@@ -246,9 +246,9 @@ Point the document root at `public` and allow its `.htaccess`, which needs `mod_
 ```apache
 <VirtualHost *:443>
     ServerName vault.example.com
-    DocumentRoot /var/www/vaultwarphpen/public
+    DocumentRoot /var/www/kennword/public
 
-    <Directory /var/www/vaultwarphpen/public>
+    <Directory /var/www/kennword/public>
         AllowOverride All
         Require all granted
     </Directory>
@@ -271,14 +271,14 @@ that the rate limits and logs see the client's address.
 
 - Do not run `php artisan optimize`, `config:cache` or `route:cache`. With a cached configuration
   Laravel stops reading `.env`, and the routes depend on `DOMAIN`.
-- Do not change Laravel's cache, session or queue drivers to a database: Vaultwarphpen shares its
+- Do not change Laravel's cache, session or queue drivers to a database: Kennword shares its
   database with Vaultwarden and adds no tables of its own.
 
 ## Scheduled jobs
 
 Vaultwarden runs jobs on a schedule: it purges expired Sends, the trash (with `TRASH_AUTO_DELETE_DAYS`),
 old events (with `EVENTS_DAYS_RETAIN`) and unfinished logins, mails users about two-step logins that
-were not completed, and grants and reminds of emergency access requests. Vaultwarphpen runs them with
+were not completed, and grants and reminds of emergency access requests. Kennword runs them with
 Artisan, as the user PHP runs as. Either keep the scheduler running as a service, like Vaultwarden's
 own scheduler, which checks every `JOB_POLL_INTERVAL_MS` (30 seconds by default):
 
@@ -290,12 +290,12 @@ for example with a systemd unit:
 
 ```ini
 [Unit]
-Description=Vaultwarphpen scheduled jobs
+Description=Kennword scheduled jobs
 After=network.target
 
 [Service]
 User=www-data
-WorkingDirectory=/var/www/vaultwarphpen
+WorkingDirectory=/var/www/kennword
 ExecStart=/usr/bin/php artisan vaultwarden:schedule
 Restart=always
 
@@ -307,7 +307,7 @@ It stops between two checks on `SIGTERM` or `SIGINT` (with PHP's `pcntl` extensi
 cron is available, check once a minute:
 
 ```cron
-* * * * * cd /var/www/vaultwarphpen && php artisan vaultwarden:schedule --once
+* * * * * cd /var/www/kennword && php artisan vaultwarden:schedule --once
 ```
 
 `--once` keeps the time of the previous run in Laravel's cache and skips a run while the previous one
@@ -347,7 +347,7 @@ NOTIFICATIONS_SOCKET=tcp://127.0.0.1:3013
 The daemon listens there only on a loopback address (or `localhost`) or another address that is not
 reachable from the internet; it refuses `0.0.0.0`, `[::]` and public addresses.
 
-Without the daemon, or with `ENABLE_WEBSOCKET=false` (the daemon then refuses to start), Vaultwarphpen
+Without the daemon, or with `ENABLE_WEBSOCKET=false` (the daemon then refuses to start), Kennword
 behaves like Vaultwarden with WebSockets turned off: the clients see changes at their next sync.
 
 Run it as a service, as the user PHP runs as (so that it can read the RSA key and the web requests can
@@ -355,12 +355,12 @@ reach its socket, which is open to the daemon's user and group only), for exampl
 
 ```ini
 [Unit]
-Description=Vaultwarphpen live notifications
+Description=Kennword live notifications
 After=network.target
 
 [Service]
 User=www-data
-WorkingDirectory=/var/www/vaultwarphpen
+WorkingDirectory=/var/www/kennword
 ExecStart=/usr/bin/php artisan vaultwarden:notifications
 Restart=always
 
@@ -427,12 +427,12 @@ This needs no daemon: the web requests send the notifications themselves, once t
    folders:
 
    ```bash
-   composer create-project --no-dev --no-scripts christianrudde/vaultwarphpen vaultwarphpen-new
-   rm -r vaultwarphpen-new/data
-   mv vaultwarphpen/.env vaultwarphpen/data vaultwarphpen/web-vault vaultwarphpen-new/
-   mv vaultwarphpen vaultwarphpen-old
-   mv vaultwarphpen-new vaultwarphpen
-   cd vaultwarphpen
+   composer create-project --no-dev --no-scripts lumundi/kennword kennword-new
+   rm -r kennword-new/data
+   mv kennword/.env kennword/data kennword/web-vault kennword-new/
+   mv kennword kennword-old
+   mv kennword-new kennword
+   cd kennword
    ```
 
    From a release archive, replace the code and keep `.env` and `data/`: unpack the new archive next to
@@ -441,12 +441,12 @@ This needs no daemon: the web requests send the notifications themselves, once t
    behind. With a file manager or FTP client, do the same by renaming and moving:
 
    ```bash
-   tar -xzf vaultwarphpen-1.1.0.tar.gz
-   rm -r vaultwarphpen-1.1.0/data
-   mv vaultwarphpen/.env vaultwarphpen/data vaultwarphpen-1.1.0/
-   mv vaultwarphpen vaultwarphpen-old
-   mv vaultwarphpen-1.1.0 vaultwarphpen
-   cd vaultwarphpen
+   tar -xzf kennword-1.1.0.tar.gz
+   rm -r kennword-1.1.0/data
+   mv kennword/.env kennword/data kennword-1.1.0/
+   mv kennword kennword-old
+   mv kennword-1.1.0 kennword
+   cd kennword
    ```
 
    If `DATA_FOLDER` points outside the installation, only `.env` moves. Do not unpack the new archive
@@ -467,5 +467,5 @@ This needs no daemon: the web requests send the notifications themselves, once t
 
 5. Restart the scheduler and the notifications daemon, if you use them, so that they load the new code.
 
-The [releases](https://github.com/christianrudde/vaultwarphpen/releases) list what changed; `main` is
+The [releases](https://github.com/Lumundi/kennword/releases) list what changed; `main` is
 the current state between them.

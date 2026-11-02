@@ -1,11 +1,11 @@
 # Moving from Vaultwarden
 
-Vaultwarphpen uses Vaultwarden's database, data folder and settings unchanged. An existing installation
+Kennword uses Vaultwarden's database, data folder and settings unchanged. An existing installation
 can therefore move over, and back again. Check a copy of your installation first: `php artisan
 vaultwarden:check` tells you what needs attention before you switch.
 
 > [!NOTE]
-> Vaultwarphpen covers Vaultwarden's features ([status](../README.md#status)). A few things work
+> Kennword covers Vaultwarden's features ([status](../README.md#status)). A few things work
 > differently on a PHP host ([differences](configuration.md#differences-from-vaultwarden)): files stay on
 > the local disk, so a data folder on S3 (`s3://`) cannot move; the web server takes the place of the
 > `ROCKET_*` settings; PHP's upload limits must allow Vaultwarden's 525 MB; and live notifications need
@@ -41,9 +41,9 @@ It changes nothing. It looks at:
   `ROCKET_*` settings that have no effect here;
 - **the data folder:** whether `DATA_FOLDER` and the folders for attachments, Sends, icons and temporary
   files exist and PHP can write to them, whether they are relative (Vaultwarden resolves relative paths
-  against its working directory, Vaultwarphpen against its own folder), whether the RSA key is there
+  against its working directory, Kennword against its own folder), whether the RSA key is there
   and readable, the web vault, and PHP's upload limits;
-- **the database:** the migrations booked in Diesel's table against the ones Vaultwarphpen knows, and
+- **the database:** the migrations booked in Diesel's table against the ones Kennword knows, and
   the schema against the one Vaultwarden creates (`parity/schema/<type>.json`), table by table and
   column by column;
 - **the rows:** how many users, ciphers, attachments and so on there are, ciphers of types the clients
@@ -70,9 +70,9 @@ php artisan vaultwarden:check --database=mysql
 1. **Stop Vaultwarden**, so that nothing changes while you copy.
 2. **Back up** the database and the data folder. With SQLite, copy `db.sqlite3` together with any
    `db.sqlite3-wal` and `db.sqlite3-shm` files.
-3. **Install Vaultwarphpen** as described in [Installation](installation.md), without creating a new
+3. **Install Kennword** as described in [Installation](installation.md), without creating a new
    database yet.
-4. **Bring the data folder:** copy it to Vaultwarphpen's `data` folder, or set `DATA_FOLDER` to where it
+4. **Bring the data folder:** copy it to Kennword's `data` folder, or set `DATA_FOLDER` to where it
    is. PHP must be able to write to it.
 5. **Bring the settings:** copy Vaultwarden's environment variables into `.env` (or the server's
    environment). Keep `DOMAIN` as it was, so that the clients and their security keys do not notice the
@@ -90,25 +90,25 @@ php artisan vaultwarden:check --database=mysql
    php artisan vaultwarden:migrate
    ```
 
-   If your Vaultwarden was older than the version Vaultwarphpen follows, this brings the schema up to
-   date, exactly as a Vaultwarden update would. Vaultwarphpen books the migrations in Diesel's own
+   If your Vaultwarden was older than the version Kennword follows, this brings the schema up to
+   date, exactly as a Vaultwarden update would. Kennword books the migrations in Diesel's own
    table, so Vaultwarden sees them as applied. It also converts old U2F and WebAuthn data, as
    Vaultwarden does at every start.
-8. **Switch the web server** to Vaultwarphpen and log in with a client. Clients that were logged in stay
+8. **Switch the web server** to Kennword and log in with a client. Clients that were logged in stay
    logged in, as long as the RSA key moved with the data folder.
 
-Vaultwarphpen follows the Vaultwarden commit pinned in
+Kennword follows the Vaultwarden commit pinned in
 [`parity/reference.json`](../parity/reference.json). A database from a newer Vaultwarden may contain
-migrations Vaultwarphpen does not know (the check reports them); move over from that version or an
+migrations Kennword does not know (the check reports them); move over from that version or an
 older one.
 
 ## Going back
 
-1. **Stop Vaultwarphpen** (and the notifications daemon and the scheduler, if they run).
+1. **Stop Kennword** (and the notifications daemon and the scheduler, if they run).
 2. **Start Vaultwarden** with the same database, data folder and settings.
 
-Use a Vaultwarden that knows at least the migrations Vaultwarphpen applied, that is the pinned version
-or a newer one. Nothing needs converting: Vaultwarphpen writes the rows, files, `config.json` and RSA key
+Use a Vaultwarden that knows at least the migrations Kennword applied, that is the pinned version
+or a newer one. Nothing needs converting: Kennword writes the rows, files, `config.json` and RSA key
 in Vaultwarden's own formats, and tokens it issued stay valid with Vaultwarden.
 
 ## How the move is tested
@@ -123,15 +123,15 @@ The CI moves an installation in both directions on SQLite, MySQL and PostgreSQL
    authenticator app, a security key, email and a recovery code, and settings saved in the admin
    panel.
 2. Vaultwarden stops; `vaultwarden:check` must find no problem, and `vaultwarden:migrate` runs.
-3. Vaultwarphpen serves the same database and data folder. Everything the clients read (syncs, devices,
+3. Kennword serves the same database and data folder. Everything the clients read (syncs, devices,
    two-factor methods, emergency access, login requests, the organization, its events and API key,
    attachments and their files, Sends, the admin panel) must be exactly what Vaultwarden answered, and
    every way to log in must work with what Vaultwarden stored: tokens, remembered devices, the
    authenticator app, the security key, email codes, the recovery code, API keys and an approved login
-   request. Then Vaultwarphpen changes the installation: new and changed ciphers, folders, attachments,
+   request. Then Kennword changes the installation: new and changed ciphers, folders, attachments,
    Sends, members, groups, policies, KDF settings, passwords, security keys and settings.
-4. Vaultwarden starts on what Vaultwarphpen left and must answer exactly as Vaultwarphpen did, and log in
-   with what Vaultwarphpen stored.
+4. Vaultwarden starts on what Kennword left and must answer exactly as Kennword did, and log in
+   with what Kennword stored.
 
 Since `parity/schema` describes the databases Vaultwarden creates, the Reference workflow also checks
 that both create the same schema, in both directions (`.github/scripts/database-parity.sh`).

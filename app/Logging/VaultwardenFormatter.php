@@ -10,7 +10,7 @@ use Monolog\LogRecord;
  * `[<time>][<target>][<LEVEL>] <message>`, the time in LOG_TIMESTAMP_FORMAT,
  * otherwise the message alone. Rust's log crate knows the levels ERROR,
  * WARN, INFO, DEBUG and TRACE; Monolog's others are mapped onto them. The
- * target is "vaultwarphpen", where Vaultwarden names its Rust module.
+ * target is "kennword", where Vaultwarden names its Rust module.
  */
 final class VaultwardenFormatter extends LineFormatter
 {
@@ -21,7 +21,7 @@ final class VaultwardenFormatter extends LineFormatter
 
     public function __construct(private readonly bool $extended = true, string $timestampFormat = '%Y-%m-%d %H:%M:%S.%3f')
     {
-        parent::__construct($extended ? "[%datetime%][vaultwarphpen][%level_name%] %message% %context% %extra%\n" : "%message% %context% %extra%\n",
+        parent::__construct($extended ? "[%datetime%][kennword][%level_name%] %message% %context% %extra%\n" : "%message% %context% %extra%\n",
             Strftime::toDateFormat($timestampFormat), allowInlineLineBreaks: true, ignoreEmptyContextAndExtra: true);
     }
 

@@ -59,7 +59,7 @@ final readonly class WebVaultReleases implements Source
             key: "web-vault:{$this->reference->webVault}",
             title: "Web vault {$tag} is out; the pin ships {$this->reference->webVault}",
             body: sprintf(
-                'bw_web_builds released [%s](%s) on %s. Vaultwarphpen installs the web vault Vaultwarden ships '
+                'bw_web_builds released [%s](%s) on %s. Kennword installs the web vault Vaultwarden ships '
                 ."(`web_vault` and `web_vault_digest` in `parity/reference.json`, from Vaultwarden's `docker/DockerSettings.yaml`).\n\n%s\n\n"
                 .'If its notes name security fixes, check how soon Vaultwarden ships it. This issue closes itself once the pin has a web vault as new.',
                 $tag, Matrix::string($newest['html_url'] ?? ''), substr(Matrix::string($newest['published_at'] ?? ''), 0, 10),

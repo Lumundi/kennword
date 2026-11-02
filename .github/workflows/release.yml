@@ -59,7 +59,7 @@ jobs:
         with:
           name: release
           path: |
-            build/vaultwarphpen-*
+            build/kennword-*
             build/web-vault-*-source-*.tar.gz
           if-no-files-found: error
 
@@ -95,10 +95,10 @@ jobs:
           cat > "$RUNNER_TEMP/notes.md" <<EOF
           Archives for PHP hosts without Composer: the code with its dependencies in \`vendor/\` and the web vault
           that Vaultwarden ships in \`web-vault/\`. [Installing from a release archive](https://github.com/$GH_REPO/blob/$TAG/docs/installation.md#installing-from-a-release-archive)
-          describes the installation and the update; \`sha256sum --check vaultwarphpen-${TAG#v}.sha256\` checks the downloads.
+          describes the installation and the update; \`sha256sum --check kennword-${TAG#v}.sha256\` checks the downloads.
 
           The web vault is Vaultwarden's build of the Bitwarden web client, under the GPL-3.0. Its source is attached
           as \`web-vault-*-source-*.tar.gz\`; [NOTICE.md](https://github.com/$GH_REPO/blob/$TAG/NOTICE.md#web-vault)
           says where it comes from.
           EOF
-          gh release create "$TAG" build/* --draft --verify-tag --title "Vaultwarphpen ${TAG#v}" --generate-notes --notes-file "$RUNNER_TEMP/notes.md"
+          gh release create "$TAG" build/* --draft --verify-tag --title "Kennword ${TAG#v}" --generate-notes --notes-file "$RUNNER_TEMP/notes.md"

@@ -5,17 +5,17 @@ namespace App\Support;
 use Composer\InstalledVersions;
 
 /**
- * The version of Vaultwarphpen, which Vaultwarden takes from git when it is
+ * The version of Kennword, which Vaultwarden takes from git when it is
  * built (VW_VERSION). Here Composer records the checkout it installed.
  */
 final class Release
 {
-    public const string NAME = 'Vaultwarphpen';
+    public const string NAME = 'Kennword';
 
     /**
      * The GitHub repository whose releases and commits are the newer versions.
      */
-    public const string REPOSITORY = 'christianrudde/vaultwarphpen';
+    public const string REPOSITORY = 'Lumundi/kennword';
 
     /**
      * The tag of a release without its "v", otherwise the first 8 characters

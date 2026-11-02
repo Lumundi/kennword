@@ -1,13 +1,13 @@
 # Testing with the official clients
 
-The differential tests compare Vaultwarphpen's HTTP answers with Vaultwarden's, with keys made up for
+The differential tests compare Kennword's HTTP answers with Vaultwarden's, with keys made up for
 the purpose. The tests in [`tests/Clients`](../tests/Clients) go further: they drive the official
 Bitwarden clients against a running server, so every key is made and every item encrypted and
 decrypted by the clients' own cryptography, as it is for users.
 
 ## The clients
 
-- **The web vault** that Vaultwarphpen serves: the build of Vaultwarden's Docker image that
+- **The web vault** that Kennword serves: the build of Vaultwarden's Docker image that
   `parity/reference.json` pins (`web_vault`, see [Installation](installation.md#web-vault)), driven by
   [Playwright](https://playwright.dev) in headless Chromium.
 - **The Bitwarden CLI** from npm, [`@bitwarden/cli`](https://www.npmjs.com/package/@bitwarden/cli), in the
@@ -83,7 +83,7 @@ account-restricted, CSV and zip exports, imports from other password managers, a
 [`.github/scripts/clients.sh`](../.github/scripts/clients.sh) starts the server with an empty SQLite
 database and the web vault, and runs the tests:
 
-- Vaultwarphpen on PHP's built-in server (port 8100), with the notifications daemon (port 8101).
+- Kennword on PHP's built-in server (port 8100), with the notifications daemon (port 8101).
 - In front of it, an HTTPS proxy ([`tests/Clients/proxy.mjs`](../tests/Clients/proxy.mjs), port 8443)
   with a certificate from an authority the script makes. The clients talk to nothing but HTTPS, and
   `DOMAIN` is the proxy's address. WebSocket requests go to the daemon, as a reverse proxy in

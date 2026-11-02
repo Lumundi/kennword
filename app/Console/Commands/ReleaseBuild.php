@@ -117,7 +117,7 @@ class ReleaseBuild extends Command
             $version = trim(Process::path($staging)
                 ->run([PHP_BINARY, '-r', 'require "vendor/autoload.php"; echo App\Support\Release::installed();'])
                 ->throw()->output());
-            $name = 'vaultwarphpen-'.($version === '-' ? substr($commit, 0, 8) : $version);
+            $name = 'kennword-'.($version === '-' ? substr($commit, 0, 8) : $version);
 
             // Leave what the installation wrote besides the dependencies and the web vault (caches, logs) and git.
             Process::path($staging)->run(['git', 'clean', '-d', '--force', '-x', '--quiet', '--exclude=/vendor', '--exclude=/web-vault'])->throw();

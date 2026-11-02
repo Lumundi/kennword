@@ -12,7 +12,7 @@ use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
  */
 class RequestTest extends TestCase
 {
-    private const array SCRIPT = ['SCRIPT_NAME' => '/index.php', 'SCRIPT_FILENAME' => '/var/www/vaultwarphpen/public/index.php'];
+    private const array SCRIPT = ['SCRIPT_NAME' => '/index.php', 'SCRIPT_FILENAME' => '/var/www/kennword/public/index.php'];
 
     public function test_a_script_name_in_the_url_stays_part_of_the_path(): void
     {

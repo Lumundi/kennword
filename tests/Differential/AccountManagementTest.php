@@ -26,7 +26,7 @@ class AccountManagementTest extends DifferentialTestCase
             $config = $server->send('GET', '/api/config');
             $body = json_decode($config->body, true);
             $this->assertIsArray($body);
-            $this->assertContains(data_get($body, 'server.name'), ['Vaultwarden', 'Vaultwarphpen']);
+            $this->assertContains(data_get($body, 'server.name'), ['Vaultwarden', 'Kennword']);
             unset($body['server'], $body['gitHash']);
             $steps['config'] = $config->withBody((string) json_encode($body));
             $steps['webauthn'] = $server->send('GET', '/api/webauthn', $auth);

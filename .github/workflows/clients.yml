@@ -1,6 +1,6 @@
 name: Clients
 
-# Drives the official Bitwarden clients against Vaultwarphpen with their own
+# Drives the official Bitwarden clients against Kennword with their own
 # cryptography: the web vault it serves, in Chromium, and the CLI from npm
 # (tests/Clients, .github/scripts/clients.sh). The Reference workflow runs the
 # same tests against Vaultwarden.

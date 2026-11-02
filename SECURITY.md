@@ -1,19 +1,19 @@
 # Security policy
 
-Vaultwarphpen stores encrypted vaults, so security issues matter more than anything else here. If you
+Kennword stores encrypted vaults, so security issues matter more than anything else here. If you
 believe you have found one, please tell us privately first. Thank you!
 
 ## Status
 
-Vaultwarphpen is in early development and has not been independently audited; the findings of two
+Kennword is in early development and has not been independently audited; the findings of two
 internal reviews are in [docs/security-review.md](docs/security-review.md). Only the latest
-[release](https://github.com/christianrudde/vaultwarphpen/releases) and the latest commit on `main` are
+[release](https://github.com/Lumundi/kennword/releases) and the latest commit on `main` are
 supported; fixes are not backported to older releases.
 
 ## Reporting a vulnerability
 
 Report it through GitHub's private vulnerability reporting:
-[Security → Report a vulnerability](https://github.com/christianrudde/vaultwarphpen/security/advisories/new).
+[Security → Report a vulnerability](https://github.com/Lumundi/kennword/security/advisories/new).
 Please do not open a public issue.
 
 Helpful to include:
@@ -28,9 +28,9 @@ Please give us reasonable time to fix the issue before you disclose it.
 
 ## Issues that also affect Vaultwarden
 
-Vaultwarphpen ports Vaultwarden's behaviour as exactly as it can, so a flaw in that behaviour may exist
+Kennword ports Vaultwarden's behaviour as exactly as it can, so a flaw in that behaviour may exist
 in both. If Vaultwarden behaves the same way, please also report it to Vaultwarden as described in
-[its security policy](https://github.com/dani-garcia/vaultwarden/blob/main/SECURITY.md). Vaultwarphpen
+[its security policy](https://github.com/dani-garcia/vaultwarden/blob/main/SECURITY.md). Kennword
 is not part of the Vaultwarden project; its maintainers are not responsible for this port.
 
 ## Out of scope
