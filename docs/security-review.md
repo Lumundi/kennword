@@ -154,8 +154,7 @@ takes 128 requests at a time and drops one that sends an unsigned line. Tests: `
 Findings that are not fixed are not described here while they are open; the maintainers have the
 details. Please report anything new privately, as [SECURITY.md](../SECURITY.md) describes.
 
-- **In Vaultwarphpen only:** one, of the notifications daemon: hardening of the local channel between
-  PHP and the daemon. Until it is fixed, keep a TCP `NOTIFICATIONS_SOCKET` on the loopback interface.
+- **In Vaultwarphpen only:** none left; the hardening of the daemon's channel is fixed (16 below).
 - **Shared with Vaultwarden:** eleven weaknesses of Vaultwarden's own behaviour, most of them of low
   severity. The port keeps Vaultwarden's behaviour until the maintainers decide otherwise; they belong
   reported to Vaultwarden first.
@@ -280,3 +279,24 @@ like jsonwebtoken does.
   icon cache; the SVG filter against script, event handlers, external entities and `javascript:` links;
   the SSO binding cookie, state, nonce, PKCE and account linking; WebSocket frames, hub logins and the
   channel's signatures; escaping and CSRF in the admin panel.
+
+## The daemon's channel, November 2026
+
+The one open finding of the first review that was the port's alone, hardening of the channel between the
+web requests and the notifications daemon, was fixed after a static audit of release 0.1.3 reported it as
+well.
+
+| # | Severity | Area | Problem | Vaultwarden |
+| --- | --- | --- | --- | --- |
+| 16 | Low | Notifications daemon | Anyone on the host could reach the channel and keep requests out | not affected |
+
+**16. Access to the channel.** The Unix socket was created world-writable, so every local user could
+connect. Without the key nobody could send a message the daemon accepts, but 128 connections that sent
+nothing filled the channel and the daemon refused the web requests' messages: live sync stopped. Lines
+carried no time or nonce, so a line captured on a TCP channel could be sent again, and a TCP channel
+could be set to listen on every address.
+
+Fixed: the socket is open to the daemon's user and group only (`0660`); a connection that has not sent a
+signed line within five seconds is closed, and when the channel is full the oldest of those makes way;
+each line carries its time and a nonce, and the daemon refuses lines more than a minute off or sent
+before; over TCP it listens only on loopback or other non-public addresses. Tests: `ServerTest`.

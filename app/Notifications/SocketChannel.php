@@ -48,12 +48,14 @@ final class SocketChannel implements Channel
 
     /**
      * A line of the channel: the message as base64-encoded JSON, a dot and
-     * its HMAC-SHA256 in base64.
+     * its HMAC-SHA256 in base64. The message carries the time and a nonce,
+     * so that the daemon can refuse a line that is sent again.
      *
      * @param  array<string, mixed>  $message
      */
     public static function encode(array $message, string $key): string
     {
+        $message = [...$message, 'time' => time(), 'nonce' => bin2hex(random_bytes(16))];
         $payload = base64_encode((string) json_encode($message, JSON_UNESCAPED_SLASHES));
 
         return $payload.'.'.base64_encode(hash_hmac('sha256', $payload, $key, true))."\n";

@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Http\Request;
+use App\Support\IpNetwork;
 use Closure;
 use RuntimeException;
 use Symfony\Component\HttpFoundation\Response;
@@ -49,6 +50,17 @@ final class Server
 
     private const int MAX_CHANNEL_LINE = 1 << 20;
 
+    // Requests send a signed line as soon as they connect to the channel. A connection that has not
+    // sent one by then is closed, and when the channel is full, the oldest of those makes way.
+    private const float CHANNEL_AUTH_TIMEOUT = 5.0;
+
+    // How far the time of a line on the channel may be from the daemon's, in seconds. Within it, the
+    // nonce of each line is kept, so that a line sent again is refused.
+    private const int REPLAY_WINDOW = 60;
+
+    // The most nonces kept; past it, the oldest go, as only a flood of signed lines gets there.
+    private const int MAX_NONCES = 100_000;
+
     // Vaultwarden queues up to 100 messages per connection, and a request with one more waits until
     // the client read some. Requests do not wait here: a client that leaves this much unread is dropped.
     public const int MAX_OUTPUT = 256 << 10;
@@ -75,9 +87,16 @@ final class Server
     private array $clients = [];
 
     /**
-     * @var array<int, array{resource, string}> The socket and unread input of each request on the channel
+     * @var array<int, array{resource, string, bool, float}> Of each request on the channel: the socket,
+     *                                                       the unread input, whether it sent a valid
+     *                                                       line, and when it connected
      */
     private array $channelClients = [];
+
+    /**
+     * @var array<string, int> The time of each line within the replay window, by its nonce
+     */
+    private array $nonces = [];
 
     /**
      * @var array<string, int> The bytes each client and channel client holds, by its key in runOnce
@@ -98,6 +117,7 @@ final class Server
     /**
      * @param  Closure(Request): Response  $dispatch  Handles a request like the web server would
      * @param  int  $maxBuffered  What all connections together may hold
+     * @param  float  $channelAuthTimeout  How long a connection to the channel may wait before its first signed line
      */
     public function __construct(
         private readonly Subscriptions $subscriptions,
@@ -105,6 +125,7 @@ final class Server
         private readonly string $channelKey,
         private readonly string $scriptFilename,
         private readonly int $maxBuffered = self::MAX_BUFFERED,
+        private readonly float $channelAuthTimeout = self::CHANNEL_AUTH_TIMEOUT,
     ) {}
 
     /**
@@ -113,6 +134,10 @@ final class Server
      */
     public function listen(string $address, string $channelAddress): void
     {
+        if (str_starts_with($channelAddress, 'tcp://')) {
+            self::checkChannelHost($channelAddress);
+        }
+
         $listener = @stream_socket_server("tcp://{$address}", $errno, $error);
         if ($listener === false) {
             throw new RuntimeException("Cannot listen on {$address}: {$error}");
@@ -144,8 +169,27 @@ final class Server
         stream_set_blocking($channel, false);
         $this->channel = $channel;
         if ($this->channelPath !== null) {
-            // Whoever runs PHP for the web server must reach it; what it accepts is signed anyway.
-            @chmod($this->channelPath, 0666);
+            // For the daemon's user, which runs PHP for the web server too, and its group.
+            @chmod($this->channelPath, 0660);
+        }
+    }
+
+    /**
+     * The channel has no transport security of its own: over TCP it listens on
+     * a loopback or another address that is not global, never on all of them.
+     *
+     * @throws RuntimeException
+     */
+    public static function checkChannelHost(string $channelAddress): void
+    {
+        $host = trim((string) parse_url($channelAddress, PHP_URL_HOST), '[]');
+        if (strcasecmp($host, 'localhost') === 0) {
+            return;
+        }
+        $ip = filter_var($host, FILTER_VALIDATE_IP) === false ? null : IpNetwork::toCanonical($host);
+        if ($ip === null || in_array($ip, ['0.0.0.0', '::'], true) || IpNetwork::isGlobal($ip)) {
+            throw new RuntimeException("The notifications channel must not listen on {$channelAddress}: use a Unix socket, "
+                .'a loopback address such as tcp://127.0.0.1:3013, or a private address of this host.');
         }
     }
 
@@ -256,6 +300,11 @@ final class Server
         foreach ($this->clients as $client) {
             $next = min($next, $client->upgraded ? $client->nextPing : $client->openedAt + self::REQUEST_TIMEOUT);
         }
+        foreach ($this->channelClients as [, , $trusted, $openedAt]) {
+            if (! $trusted) {
+                $next = min($next, $openedAt + $this->channelAuthTimeout);
+            }
+        }
 
         return $next - $now;
     }
@@ -263,6 +312,20 @@ final class Server
     private function tick(): void
     {
         $now = self::now();
+        foreach ($this->channelClients as $id => [, , $trusted, $openedAt]) {
+            if (! $trusted && $now - $openedAt > $this->channelAuthTimeout) {
+                $this->closeChannelClient($id);
+            }
+        }
+        // Lines older than the window are refused by their time, so their nonces are of no more use.
+        $oldest = time() - self::REPLAY_WINDOW;
+        foreach ($this->nonces as $nonce => $time) {
+            if ($time >= $oldest) {
+                break;
+            }
+            unset($this->nonces[$nonce]);
+        }
+
         foreach ($this->clients as $client) {
             if (! $client->upgraded) {
                 if ($now - $client->openedAt > self::REQUEST_TIMEOUT) {
@@ -724,13 +787,18 @@ final class Server
             return;
         }
         if (count($this->channelClients) >= self::MAX_CHANNEL_CLIENTS) {
-            fclose($socket);
-            $this->warning('The notifications daemon refuses requests on its channel: too many are connected.');
+            // The oldest connection that has not sent a valid line yet makes way: requests send one at once.
+            $silent = array_key_first(array_filter($this->channelClients, static fn (array $client): bool => ! $client[2]));
+            if ($silent === null) {
+                fclose($socket);
+                $this->warning('The notifications daemon refuses requests on its channel: too many are connected.');
 
-            return;
+                return;
+            }
+            $this->closeChannelClient($silent);
         }
         stream_set_blocking($socket, false);
-        $this->channelClients[$this->nextId++] = [$socket, ''];
+        $this->channelClients[$this->nextId++] = [$socket, '', false, self::now()];
     }
 
     private function closeChannelClient(int $id): void
@@ -747,7 +815,7 @@ final class Server
         if (! isset($this->channelClients[$id])) {
             return;
         }
-        [$socket, $buffer] = $this->channelClients[$id];
+        [$socket, $buffer, $trusted, $openedAt] = $this->channelClients[$id];
         $data = @fread($socket, 65_536);
         $closed = $data === false || ($data === '' && feof($socket));
         $buffer .= (string) $data;
@@ -755,21 +823,47 @@ final class Server
         while (($newline = strpos($buffer, "\n")) !== false) {
             $message = SocketChannel::decode(substr($buffer, 0, $newline), $this->channelKey);
             $buffer = substr($buffer, $newline + 1);
-            if ($message === null) {
-                // Requests sign every line, so nothing more is read from whoever sent this one.
-                $this->warning('The notifications daemon received a message that is not signed with its key.');
+            if ($message === null || ! $this->isNew($message)) {
+                // Requests sign every line once, so nothing more is read from whoever sent this one.
+                $this->warning($message === null
+                    ? 'The notifications daemon received a message that is not signed with its key.'
+                    : 'The notifications daemon received a message that is out of date or was sent before.');
                 $closed = true;
 
                 break;
             }
+            $trusted = true;
             $this->deliver($message);
         }
 
         if ($closed || strlen($buffer) > self::MAX_CHANNEL_LINE) {
             $this->closeChannelClient($id);
         } elseif (isset($this->channelClients[$id])) {
-            $this->channelClients[$id] = [$socket, $buffer];
+            $this->channelClients[$id] = [$socket, $buffer, $trusted, $openedAt];
             $this->track("channel {$id}", strlen($buffer));
         }
+    }
+
+    /**
+     * Whether a signed line is sent for the first time: its time within the
+     * replay window and its nonce not seen in it.
+     *
+     * @param  array<mixed>  $message
+     */
+    private function isNew(array $message): bool
+    {
+        $time = $message['time'] ?? null;
+        $nonce = $message['nonce'] ?? null;
+        if (! is_int($time) || abs(time() - $time) > self::REPLAY_WINDOW
+            || ! is_string($nonce) || preg_match('/^[0-9a-f]{32}$/D', $nonce) !== 1 || isset($this->nonces[$nonce])) {
+            return false;
+        }
+
+        $this->nonces[$nonce] = $time;
+        if (count($this->nonces) > self::MAX_NONCES) {
+            unset($this->nonces[array_key_first($this->nonces)]);
+        }
+
+        return true;
     }
 }

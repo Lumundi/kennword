@@ -76,7 +76,8 @@ The `config:` items in [PARITY.md](../PARITY.md) show the state of each setting 
   vaultwarden:notifications`), to which the web server passes `/notifications/`
   ([Installation](installation.md#live-notifications)). Requests reach it through a socket in the data
   folder, or at `NOTIFICATIONS_SOCKET`, a setting of Vaultwarphpen's (`unix:///path` or
-  `tcp://host:port`) for both sides. `ENABLE_WEBSOCKET=false` keeps the daemon from starting.
+  `tcp://host:port`, on a loopback or other non-public address) for both sides. `ENABLE_WEBSOCKET=false`
+  keeps the daemon from starting.
 - **Push notifications** (`PUSH_*`) go to Bitwarden's relay like Vaultwarden's. The relay's access token
   is kept in Laravel's cache, shared by all PHP workers, for half of its lifetime. Notifications that
   Vaultwarden sends in the background go out after the response.

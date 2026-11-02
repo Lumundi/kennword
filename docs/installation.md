@@ -335,19 +335,23 @@ php artisan vaultwarden:notifications
 
 It listens on `127.0.0.1:3012` (`--listen=address:port` to change that) and needs PHP's `pcntl`
 extension to stop cleanly. The web requests hand their notifications to it through the Unix socket
-`notifications.sock` in the data folder; every message is signed with a key derived from the RSA key
-both read. Where Unix sockets are not available, or the data folder's path is too long for one (about
+`notifications.sock` in the data folder, which only the daemon's user and group may use; every message
+is signed with a key derived from the RSA key both read, carries its time and is accepted only once.
+Where Unix sockets are not available, or the data folder's path is too long for one (about
 100 characters), set a TCP address for both sides in `.env`:
 
 ```dotenv
 NOTIFICATIONS_SOCKET=tcp://127.0.0.1:3013
 ```
 
+The daemon listens there only on a loopback address (or `localhost`) or another address that is not
+reachable from the internet; it refuses `0.0.0.0`, `[::]` and public addresses.
+
 Without the daemon, or with `ENABLE_WEBSOCKET=false` (the daemon then refuses to start), Vaultwarphpen
 behaves like Vaultwarden with WebSockets turned off: the clients see changes at their next sync.
 
 Run it as a service, as the user PHP runs as (so that it can read the RSA key and the web requests can
-reach its socket), for example with systemd:
+reach its socket, which is open to the daemon's user and group only), for example with systemd:
 
 ```ini
 [Unit]
