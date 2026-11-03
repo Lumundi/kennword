@@ -1,4 +1,25 @@
-# Kennword
+<h1 align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Lumundi/kennword/main/.github/assets/kennword-dark.png">
+    <img src="https://raw.githubusercontent.com/Lumundi/kennword/main/.github/assets/kennword-light.png" alt="Kennword" width="352">
+  </picture>
+</h1>
+
+<p align="center"><strong>A password server for plain PHP hosting.</strong><br>
+Works with the official Bitwarden apps.</p>
+
+<p align="center">
+  <a href="https://github.com/Lumundi/kennword/actions/workflows/tests.yml"><img src="https://github.com/Lumundi/kennword/actions/workflows/tests.yml/badge.svg" alt="Tests"></a>
+  <a href="https://packagist.org/packages/lumundi/kennword"><img src="https://img.shields.io/packagist/v/lumundi/kennword?color=5A3FD9" alt="Packagist version"></a>
+  <a href="https://packagist.org/packages/lumundi/kennword"><img src="https://img.shields.io/packagist/dependency-v/lumundi/kennword/php?color=5A3FD9" alt="Required PHP version"></a>
+  <a href="https://github.com/Lumundi/kennword/blob/main/LICENSE.txt"><img src="https://img.shields.io/badge/license-AGPL--3.0--only-5A3FD9" alt="License: AGPL-3.0-only"></a>
+</p>
+
+<p align="center">
+  <a href="https://www.kennword.org">www.kennword.org</a> ·
+  <a href="https://github.com/Lumundi/kennword/blob/main/docs/installation.md">Installation</a> ·
+  <a href="https://github.com/Lumundi/kennword/blob/main/docs/security-review.md">Security review</a>
+</p>
 
 A PHP port of [Vaultwarden](https://github.com/dani-garcia/vaultwarden), the Bitwarden-compatible server
 written in Rust. Kennword is a modified version of Vaultwarden: its Rust source, translated into PHP
