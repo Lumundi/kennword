@@ -40,6 +40,7 @@ class BasicsTest extends DifferentialTestCase
         yield 'preflight of an existing route' => ['OPTIONS', '/api/now', ['Origin' => 'http://localhost']];
         yield 'script name in the path' => ['GET', '/index.php/alive', []];
         yield 'script name before admin' => ['GET', '/index.php/admin', []];
+        yield 'encoded script name before admin' => ['GET', '/index%2Ephp/admin', []];
         yield 'script name before the api' => ['GET', '/index.php/api/now', ['Accept' => 'application/json']];
         yield 'script name alone' => ['GET', '/index.php', []];
         yield 'method override in the query' => ['POST', '/api/accounts?_method=DELETE', ['Accept' => 'application/json']];

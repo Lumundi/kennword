@@ -11,7 +11,9 @@ use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
  *
  * - The path is the whole path of the URL. Symfony would take a script name in it (/index.php/admin) as the
  *   base URL and route the rest, so a web server's rules for /admin could be walked around; Rocket has no
- *   such route and answers 404.
+ *   such route and answers 404. That holds however the URL spells the script name: percent-encoded
+ *   (/index%2Ephp/admin, which the web server decodes before it applies its rules) or, on a file system
+ *   that ignores case, in capitals.
  * - Only Rocket's method override applies: a POST whose urlencoded form starts with a `_method` field. The
  *   query string and the X-HTTP-Method-Override header change nothing.
  * - JSON bodies are not decoded when the request is captured. App\Http\Data\Body reads them within Rocket's
@@ -52,7 +54,8 @@ class Request extends LaravelRequest
     {
         $baseUrl = parent::prepareBaseUrl();
 
-        return str_ends_with($baseUrl, '.php') ? '' : $baseUrl;
+        // Symfony keeps the base URL as the request spells it, percent-encoding included.
+        return str_ends_with(strtolower(rawurldecode($baseUrl)), '.php') ? '' : $baseUrl;
     }
 
     /**
