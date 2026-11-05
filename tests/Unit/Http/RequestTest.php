@@ -23,6 +23,28 @@ class RequestTest extends TestCase
         $this->assertSame('/admin', Request::create('/admin', server: self::SCRIPT)->getPathInfo());
     }
 
+    public function test_an_encoded_script_name_in_the_url_stays_part_of_the_path(): void
+    {
+        // The web server decodes the path before it applies its rules: to it, these are /index.php/admin.
+        foreach (['/index%2Ephp/admin', '/index%2ephp/admin', '/index.ph%70/admin', '/%69ndex.php/admin'] as $path) {
+            $this->assertSame('/admin', LaravelRequest::create($path, server: self::SCRIPT)->getPathInfo(), $path);
+            $this->assertSame($path, Request::create($path, server: self::SCRIPT)->getPathInfo(), $path);
+        }
+        $this->assertSame('/index%2Ephp', Request::create('/index%2Ephp', server: self::SCRIPT)->getPathInfo());
+
+        $vault = ['SCRIPT_NAME' => '/vault/index.php', 'SCRIPT_FILENAME' => '/var/www/vault/index.php'];
+        $this->assertSame('/vault/index%2Ephp/admin', Request::create('/vault/index%2Ephp/admin', server: $vault)->getPathInfo());
+    }
+
+    public function test_a_script_name_in_capitals_stays_part_of_the_path(): void
+    {
+        // On a file system that ignores case, the web server runs index.php for /INDEX.PHP as well.
+        $script = ['SCRIPT_NAME' => '/INDEX.PHP', 'SCRIPT_FILENAME' => '/var/www/kennword/public/INDEX.PHP'];
+
+        $this->assertSame('/admin', LaravelRequest::create('/INDEX.PHP/admin', server: $script)->getPathInfo());
+        $this->assertSame('/INDEX.PHP/admin', Request::create('/INDEX.PHP/admin', server: $script)->getPathInfo());
+    }
+
     public function test_only_a_leading_form_field_overrides_the_method(): void
     {
         $form = ['CONTENT_TYPE' => 'application/x-www-form-urlencoded'];
