@@ -287,7 +287,7 @@ All runtime licenses are compatible with the AGPL-3.0: MIT, BSD-3-Clause and Apa
 | `vlucas/phpdotenv` | BSD-3-Clause | <https://github.com/phpdotenv/phpdotenv> |
 | `voku/portable-ascii` | MIT | <https://github.com/voku/portable-ascii> |
 
-### Development (38)
+### Development (37)
 
 | Package | License | Source |
 |---|---|---|
@@ -328,7 +328,6 @@ All runtime licenses are compatible with the AGPL-3.0: MIT, BSD-3-Clause and Apa
 | `sebastian/type` | BSD-3-Clause | <https://github.com/sebastianbergmann/type> |
 | `sebastian/version` | BSD-3-Clause | <https://github.com/sebastianbergmann/version> |
 | `staabm/side-effects-detector` | MIT | <https://github.com/staabm/side-effects-detector> |
-| `theseer/tokenizer` | BSD-3-Clause | <https://github.com/theseer/tokenizer> |
 
 ## Client tests
 
