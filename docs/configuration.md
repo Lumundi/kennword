@@ -115,6 +115,11 @@ The `config:` items in [PARITY.md](../PARITY.md) show the state of each setting 
     write access with visible passwords, or manage. Vaultwarden only asks for write access, so a
     member whose passwords are hidden in one collection could add the item to another where they are
     not. Items that fail the check are skipped, like Vaultwarden skips items without write access.
+  - A personal item that moves into an organization brings its attachments under
+    `ORG_ATTACHMENT_LIMIT`. The clients upload the attachments again while the item is still
+    personal, so Vaultwarden never checks the organization's limit.
+  - The download link of a file Send stops working when the Send is disabled, expires or is due for
+    deletion. Vaultwarden keeps it valid for its two minutes.
 - **Development routes.** Vaultwarden's debug builds serve static files from the source tree at
   `/vw_static/`; release builds do not, and neither does Kennword.
 - **Caches.** Do not cache Laravel's configuration or routes (see

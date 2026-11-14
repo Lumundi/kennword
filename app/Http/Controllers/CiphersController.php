@@ -1028,6 +1028,18 @@ final readonly class CiphersController
         if ($cipher->organization_uuid !== null && $cipher->organization_uuid !== $data->organizationId) {
             throw ApiError::message('Organization mismatch. Please resync the client before updating the cipher');
         }
+        // Unlike Vaultwarden, a cipher that moves into an organization brings its attachments under the
+        // organization's limit: the clients upload them again while the cipher is still personal, so
+        // ORG_ATTACHMENT_LIMIT was never asked.
+        if ($cipher->organization_uuid === null && $data->organizationId !== null) {
+            $size = Attachment::findByCipher($cipher->uuid)->sum('file_size');
+            if ($size > 0) {
+                $left = $this->attachmentSpaceLeft('org_attachment_limit', Attachment::sizeByOrg($data->organizationId), 0);
+                if ($left !== null && $size > $left) {
+                    throw ApiError::message('Attachment storage limit reached! Delete some attachments to free up space');
+                }
+            }
+        }
 
         $shared = [];
         if ($data->organizationId !== null) {

@@ -176,6 +176,16 @@ class SendTest extends TestCase
         $this->get("/api/sends/{$id}/{$fileId}?t=nope")->assertStatus(404)->assertJsonPath('error.code', 404);
         $this->get("/api/sends/{$id}/{$fileId}")->assertStatus(404);
 
+        // Unlike Vaultwarden, the download token ends with its Send's validity.
+        $send = Send::findByUuid($id);
+        $this->assertNotNull($send);
+        $send->disabled = true;
+        $send->save();
+        $this->get(parse_url($url, PHP_URL_PATH).'?'.parse_url($url, PHP_URL_QUERY))->assertStatus(404);
+        $send->disabled = false;
+        $send->save();
+        $this->get(parse_url($url, PHP_URL_PATH).'?'.parse_url($url, PHP_URL_QUERY))->assertStatus(200);
+
         $this->assertFileExists(Send::filePath($id, $fileId));
         $this->delete("/api/sends/{$id}", [], $this->auth)->assertStatus(200);
         $this->assertDirectoryDoesNotExist(dirname(Send::filePath($id, $fileId)));
