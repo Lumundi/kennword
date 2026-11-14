@@ -7,6 +7,8 @@ use App\Auth\Jwt;
 use App\Auth\LoginClaims;
 use App\Http\Data\UploadData;
 use App\Models\Attachment;
+use App\Models\Cipher;
+use App\Models\CollectionCipher;
 use App\Models\Device;
 use App\Models\User;
 use App\Support\Random;
@@ -202,6 +204,29 @@ class AttachmentTest extends TestCase
             ->assertStatus(400)->assertJsonPath('message', 'Attachment storage limit reached! Delete some attachments to free up space');
         $this->upload("/api/ciphers/{$this->cipherId}/attachment", UploadedFile::fake()->createWithContent('2.n', 'x'), ['key' => '2.k'])
             ->assertStatus(400)->assertJsonPath('message', 'Attachments are disabled');
+    }
+
+    public function test_sharing_into_an_organization_brings_attachments_under_its_limit(): void
+    {
+        // Unlike Vaultwarden: the attachments of a personal cipher used to enter an organization past its limit.
+        $this->changeVaultwardenEnvironment(['ORG_ATTACHMENT_LIMIT' => '1']);
+        $org = $this->postJson('/api/organizations', ['billingEmail' => 'billing@example.com', 'collectionName' => '2.first',
+            'key' => '4.owner-key', 'name' => '2.org', 'planType' => 0], $this->auth)->json('id');
+        $this->assertIsString($org);
+        $collection = $this->get("/api/organizations/{$org}/collections", $this->auth)->json('data.0.id');
+        $this->upload("/api/ciphers/{$this->cipherId}/attachment", UploadedFile::fake()->createWithContent('2.n', str_repeat('x', 1025)), ['key' => '2.k'])
+            ->assertStatus(200);
+        $share = ['cipher' => ['type' => 2, 'name' => '2.note', 'encryptedFor' => $this->user->uuid, 'secureNote' => ['type' => 0], 'organizationId' => $org],
+            'collectionIds' => [$collection]];
+
+        $this->putJson("/api/ciphers/{$this->cipherId}/share", $share, $this->auth)
+            ->assertStatus(400)->assertJsonPath('message', 'Attachment storage limit reached! Delete some attachments to free up space');
+        $this->assertNull(Cipher::findByUuid($this->cipherId)?->organization_uuid);
+        $this->assertSame([], CollectionCipher::collectionsOfCipher($this->cipherId));
+
+        // What fits moves.
+        $this->changeVaultwardenEnvironment(['ORG_ATTACHMENT_LIMIT' => '2']);
+        $this->putJson("/api/ciphers/{$this->cipherId}/share", $share, $this->auth)->assertStatus(200)->assertJsonPath('organizationId', $org);
     }
 
     public function test_uploads_as_php_parses_them(): void

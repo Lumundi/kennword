@@ -268,6 +268,11 @@ final readonly class CiphersController
         if ($collectionIds === []) {
             throw ApiError::message('You must select at least one collection.');
         }
+        // Vaultwarden 5ad0c6d4, after the pin: only the user's own ciphers are shared, like Bitwarden's PutShare.
+        // Write access alone let a member link an organization's cipher to any collection they may write to.
+        if (Cipher::findByUuid($cipherId)?->user_uuid !== $headers->user->uuid) {
+            throw ApiError::message("Cipher doesn't exist", 404);
+        }
 
         return Json::response($this->shareCipherByUuid($cipherId, $data, $collectionIds, $headers));
     }
@@ -291,6 +296,13 @@ final readonly class CiphersController
         foreach ($ciphers as $cipher) {
             $cipher->id ?? throw ApiError::message('Request missing ids field');
             $cipher->organizationId ?? throw ApiError::message('Cipher OrganizationId is required.');
+        }
+        // Vaultwarden 5ad0c6d4, after the pin: only the user's own ciphers, all checked before anything is written.
+        $owned = Cipher::findOwnedByUser($headers->user->uuid)->pluck('uuid')->all();
+        foreach ($ciphers as $cipher) {
+            if (! in_array($cipher->id, $owned, true)) {
+                throw ApiError::message('Trying to share ciphers that you do not own.');
+            }
         }
 
         $responses = [];
@@ -1015,6 +1027,18 @@ final readonly class CiphersController
         // Checked before the collections are linked; there is no transaction.
         if ($cipher->organization_uuid !== null && $cipher->organization_uuid !== $data->organizationId) {
             throw ApiError::message('Organization mismatch. Please resync the client before updating the cipher');
+        }
+        // Unlike Vaultwarden, a cipher that moves into an organization brings its attachments under the
+        // organization's limit: the clients upload them again while the cipher is still personal, so
+        // ORG_ATTACHMENT_LIMIT was never asked.
+        if ($cipher->organization_uuid === null && $data->organizationId !== null) {
+            $size = Attachment::findByCipher($cipher->uuid)->sum('file_size');
+            if ($size > 0) {
+                $left = $this->attachmentSpaceLeft('org_attachment_limit', Attachment::sizeByOrg($data->organizationId), 0);
+                if ($left !== null && $size > $left) {
+                    throw ApiError::message('Attachment storage limit reached! Delete some attachments to free up space');
+                }
+            }
         }
 
         $shared = [];

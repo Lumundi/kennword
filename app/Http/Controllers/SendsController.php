@@ -285,6 +285,12 @@ final readonly class SendsController
             throw new HttpStatus(404, 'The token is for another file.');
         }
 
+        // Unlike Vaultwarden, the Send has to be accessible still: a token does not outlive disabling, expiry or
+        // deletion of its Send by up to two minutes. Its holder may still use it again until it expires.
+        if (Send::findByUuid($sendId)?->isAccessible() !== true) {
+            throw new HttpStatus(404, 'The Send is not accessible.');
+        }
+
         $path = Send::filePath($sendId, $fileId);
         if (! is_file($path)) {
             throw new HttpStatus(404, 'No such file.');
