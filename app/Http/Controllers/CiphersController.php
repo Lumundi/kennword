@@ -268,6 +268,11 @@ final readonly class CiphersController
         if ($collectionIds === []) {
             throw ApiError::message('You must select at least one collection.');
         }
+        // Vaultwarden 5ad0c6d4, after the pin: only the user's own ciphers are shared, like Bitwarden's PutShare.
+        // Write access alone let a member link an organization's cipher to any collection they may write to.
+        if (Cipher::findByUuid($cipherId)?->user_uuid !== $headers->user->uuid) {
+            throw ApiError::message("Cipher doesn't exist", 404);
+        }
 
         return Json::response($this->shareCipherByUuid($cipherId, $data, $collectionIds, $headers));
     }
@@ -291,6 +296,13 @@ final readonly class CiphersController
         foreach ($ciphers as $cipher) {
             $cipher->id ?? throw ApiError::message('Request missing ids field');
             $cipher->organizationId ?? throw ApiError::message('Cipher OrganizationId is required.');
+        }
+        // Vaultwarden 5ad0c6d4, after the pin: only the user's own ciphers, all checked before anything is written.
+        $owned = Cipher::findOwnedByUser($headers->user->uuid)->pluck('uuid')->all();
+        foreach ($ciphers as $cipher) {
+            if (! in_array($cipher->id, $owned, true)) {
+                throw ApiError::message('Trying to share ciphers that you do not own.');
+            }
         }
 
         $responses = [];

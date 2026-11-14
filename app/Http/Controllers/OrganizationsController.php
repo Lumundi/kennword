@@ -876,9 +876,12 @@ final readonly class OrganizationsController
         }
 
         foreach ($cipherIds as $cipherId) {
-            // Gone ciphers are skipped; they may just have been deleted.
+            // Gone ciphers are skipped; they may just have been deleted. Unlike Vaultwarden, which only asks for
+            // write access, the user needs what PUT /ciphers/{id}/collections asks for: write access with visible
+            // passwords, or manage. Otherwise a member could link a cipher whose passwords are hidden from them to
+            // a collection where they are not, and read them there.
             $cipher = Cipher::findByUuidAndOrg($cipherId, $orgId);
-            if ($cipher === null || ! $cipher->isWriteAccessibleToUser($headers->user->uuid)) {
+            if ($cipher === null || ! $cipher->isInEditableCollectionByUser($headers->user->uuid)) {
                 continue;
             }
             foreach ($collectionIds as $collectionId) {
