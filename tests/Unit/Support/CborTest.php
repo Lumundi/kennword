@@ -93,6 +93,45 @@ class CborTest extends TestCase
         Cbor::decode((string) hex2bin($hex));
     }
 
+    public function test_map_keys_compare_like_identity(): void
+    {
+        $map = new CborMap;
+        $map->set(1, 'int');
+        $map->set(1.0, 'float');
+        $map->set('1', 'text');
+        $map->set(new CborBytes('1'), 'bytes');
+        $map->set(0.0, 'zero');
+        $map->set(-0.0, 'negative zero');
+        $map->set(NAN, 'nan');
+        $map->set(NAN, 'another nan');
+        $map->set([1], 'list');
+        $map->set([1], 'same list');
+        $map->set(true, 'true');
+        $map->set(null, 'null');
+        $map->set(new CborBytes('1'), 'bytes again');
+
+        $this->assertCount(10, $map->entries());
+        $this->assertSame(['int', 'float', 'text', 'bytes again', 'negative zero', 'same list', 'true', 'null'],
+            [$map->get(1), $map->get(1.0), $map->get('1'), $map->get(new CborBytes('1')), $map->get(0.0), $map->get([1]), $map->get(true), $map->get(null)]);
+        $this->assertFalse($map->has(NAN));
+        $this->assertFalse($map->has(false));
+    }
+
+    public function test_large_maps_decode_in_linear_time(): void
+    {
+        // Each key compared with every earlier one took minutes for maps like this.
+        $count = 20_000;
+        $data = "\xBA".pack('N', $count);
+        for ($i = 0; $i < $count; $i++) {
+            $data .= "\x1A".pack('N', $i)."\x00";
+        }
+        $start = microtime(true);
+        $map = Cbor::decode($data);
+        $this->assertInstanceOf(CborMap::class, $map);
+        $this->assertCount($count, $map->entries());
+        $this->assertLessThan(1.0, microtime(true) - $start);
+    }
+
     public function test_base64_forms(): void
     {
         $this->assertSame('-_8', Base64UrlSafe::encode("\xfb\xff"));
