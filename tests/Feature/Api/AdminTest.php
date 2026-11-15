@@ -186,6 +186,16 @@ class AdminTest extends TestCase
         $this->assertNotSame($inode, fileinode($file));
         $this->assertSame(0600, fileperms($file) & 0777);
         $this->assertSame([], glob("{$this->dataFolder}/*.tmp"));
+
+        // An existing file keeps its mode; a new one, which holds the admin token, is its owner's only.
+        chmod($file, 0644);
+        $this->postJson('/admin/config', ['invitation_org_name' => 'Other', 'admin_token' => self::TOKEN])->assertStatus(200);
+        clearstatcache();
+        $this->assertSame(0644, fileperms($file) & 0777);
+        unlink($file);
+        $this->postJson('/admin/config', ['invitation_org_name' => 'New', 'admin_token' => self::TOKEN])->assertStatus(200);
+        clearstatcache();
+        $this->assertSame(0600, fileperms($file) & 0777);
     }
 
     public function test_the_login_form_is_limited_like_rockets_forms(): void
@@ -231,6 +241,8 @@ class AdminTest extends TestCase
         }
         $this->assertFileExists($match[1]);
         $this->assertStringStartsWith($this->dataFolder.'/', $match[1]);
+        $this->assertGreaterThan(0, filesize($match[1]));
+        $this->assertSame(0600, fileperms($match[1]) & 0777);
 
         $this->changeVaultwardenEnvironment(['DATABASE_URL' => 'mysql://user:pass@localhost/vaultwarden']);
         $this->postJson('/admin/config/backup_db')->assertStatus(400)->assertJsonPath('message', "Can't back up current DB (Only SQLite supports this feature)");

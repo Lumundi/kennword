@@ -45,6 +45,8 @@ class JwtTest extends TestCase
 
         $pem = (string) file_get_contents("{$this->base}/data/rsa_key.pem");
         $this->assertStringStartsWith("-----BEGIN RSA PRIVATE KEY-----\n", $pem);
+        // Whoever reads it can sign tokens for every account, so only its owner may.
+        $this->assertSame(0600, fileperms("{$this->base}/data/rsa_key.pem") & 0777);
         $this->assertStringEndsWith("\n-----END RSA PRIVATE KEY-----\n", $pem);
 
         $details = openssl_pkey_get_details($this->keys->privateKey());

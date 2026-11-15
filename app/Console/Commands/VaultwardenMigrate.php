@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Database\VaultwardenMigrator;
 use App\Models\TwoFactor;
+use App\Support\PrivateFile;
 use Illuminate\Console\Command;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Support\Facades\File;
@@ -29,7 +30,7 @@ class VaultwardenMigrate extends Command
         $file = $connection->getConfig('database');
         if ($connection->getDriverName() === 'sqlite' && is_string($file) && $file !== ':memory:' && ! File::exists($file)) {
             File::ensureDirectoryExists(dirname($file));
-            File::put($file, '');
+            PrivateFile::create($file);
         }
 
         $applied = $migrator->migrate($connection);

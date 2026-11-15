@@ -59,6 +59,7 @@ class VaultwardenCheckTest extends TestCase
         $this->assertMatchesRegularExpression('/Users \.+ 1\b/', $output);
         $this->assertMatchesRegularExpression('/Files \.+ all found/', $output);
         $this->assertMatchesRegularExpression('/RSA key \.+ found, 2048 bits/', $output);
+        $this->assertDoesNotMatchRegularExpression('/File modes \.+ .*RSA key/', $output);
         $this->assertStringContainsString('Ready to move', $output);
         $this->assertPrivate($output, ['2.secret-name', '2.send-name']);
     }
@@ -190,6 +191,23 @@ class VaultwardenCheckTest extends TestCase
         [$status, $output] = $this->check();
         $this->assertSame(1, $status, $output);
         $this->assertStringContainsString('The database is empty.', $output);
+        $this->assertPrivate($output, []);
+    }
+
+    public function test_files_with_secrets_that_others_may_read_are_named(): void
+    {
+        $this->installation('sqlite');
+        // As files copied from elsewhere often are, under the usual umask.
+        chmod("{$this->dataFolder}/rsa_key.pem", 0644);
+        chmod("{$this->dataFolder}/db.sqlite3", 0644);
+        file_put_contents("{$this->dataFolder}/config.json", '{}');
+        chmod("{$this->dataFolder}/config.json", 0600);
+
+        [$status, $output] = $this->check();
+
+        $this->assertSame(0, $status, $output);
+        $this->assertMatchesRegularExpression('/File modes \.+ RSA key, (?:\.env, )?SQLite database open to other users/', $output);
+        $this->assertStringContainsString('chmod 600', $output);
         $this->assertPrivate($output, []);
     }
 

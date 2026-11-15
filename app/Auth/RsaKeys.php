@@ -3,6 +3,7 @@
 namespace App\Auth;
 
 use App\Config\Config;
+use App\Support\PrivateFile;
 use OpenSSLAsymmetricKey;
 use RuntimeException;
 
@@ -74,13 +75,10 @@ final class RsaKeys
         $pem = is_file($path) ? file_get_contents($path) : false;
         if ($pem === false) {
             $pem = self::generate();
-            // Exclusive creation, so concurrent first requests agree on one key.
-            $handle = @fopen($path, 'x');
-            if ($handle === false) {
+            // Exclusive creation, so concurrent first requests agree on one key. Whoever reads it can sign
+            // tokens for every account, so only its owner may.
+            if (! PrivateFile::create($path, $pem)) {
                 $pem = file_get_contents($path) ?: throw new RuntimeException("Cannot create the private key {$path}.");
-            } else {
-                fwrite($handle, $pem);
-                fclose($handle);
             }
         }
 

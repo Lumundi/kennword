@@ -34,7 +34,8 @@ This takes the latest [release](https://github.com/Lumundi/kennword/releases); a
 `dev-main` after the folder for the current state of `main`. After the PHP dependencies, Composer sets
 up:
 
-1. `.env`, copied from `.env.example`, with a new application key (`php artisan key:generate`)
+1. `.env`, copied from `.env.example` and readable by your user only, with a new application key
+   (`php artisan key:generate`)
 2. the database schema, in SQLite at `data/db.sqlite3` (`php artisan kennword:migrate`)
 3. the web vault in `web-vault/` (`php artisan kennword:web-vault`, see [below](#web-vault))
 
@@ -48,6 +49,7 @@ git clone https://github.com/Lumundi/kennword.git
 cd kennword
 composer install --no-dev --optimize-autoloader
 cp .env.example .env
+chmod 600 .env
 php artisan key:generate
 php artisan kennword:migrate
 php artisan kennword:web-vault
@@ -75,7 +77,8 @@ archive of any commit [yourself](#building-an-archive).
 2. Let the user PHP runs as write to `data/`, `storage/` and `bootstrap/cache/` (see
    [Permissions](#permissions)). Uploaded by FTP, the files usually belong to that user already.
 3. Copy `.env.example` to `.env` and set at least `DOMAIN` (see [Configuring it](#configuring-it), also
-   for `DATABASE_URL`).
+   for `DATABASE_URL`). Only the user PHP runs as should be able to read it (`chmod 600 .env`, or the FTP
+   client's permission setting).
 4. In a shell on the server, in the folder, create the application key and the database schema:
 
    ```bash
@@ -184,6 +187,13 @@ able to write to:
 
 Nothing else needs to be writable. Keep `data/` out of the web root; the default layout does that,
 because only `public/` is served.
+
+Some files hold secrets: `.env`, the RSA key (`data/rsa_key.pem`; whoever reads it can sign login tokens
+for every account), `data/config.json` with the admin token, and the SQLite database. Kennword creates
+the last three readable and writable by their owner only (mode 600), whatever the umask, and so are
+backups of the database made in the admin panel. Files you copy from elsewhere, such as Vaultwarden's
+data folder, keep their modes: `php artisan kennword:check` names those that other users can read, and
+`chmod 600` fixes them.
 
 ### When the host serves the whole folder
 

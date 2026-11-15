@@ -16,6 +16,7 @@ use App\Models\Cipher;
 use App\Models\Send;
 use App\Models\TwoFactor;
 use App\Support\JsonValue;
+use App\Support\PrivateFile;
 use App\Support\Release;
 use Illuminate\Console\Command;
 use Illuminate\Database\Connection;
@@ -203,6 +204,8 @@ class VaultwardenCheck extends Command
             $this->warning('Web vault', 'missing', 'Install it with php artisan kennword:web-vault, or set WEB_VAULT_ENABLED=false.');
         }
 
+        $this->fileModes($config);
+
         $limits = ['upload_max_filesize' => self::bytes((string) ini_get('upload_max_filesize')), 'post_max_size' => self::bytes((string) ini_get('post_max_size'))];
         $small = array_filter($limits, static fn (int $bytes, string $name): bool => $name === 'post_max_size' ? $bytes !== 0 && $bytes <= 525 * 1024 * 1024 : $bytes < 525 * 1024 * 1024, ARRAY_FILTER_USE_BOTH);
         if ($small === []) {
@@ -210,6 +213,33 @@ class VaultwardenCheck extends Command
         } else {
             $this->warning('PHP upload limits', implode(', ', array_keys($small)).' too small',
                 'Vaultwarden takes files up to 525 MB: set upload_max_filesize=525M and post_max_size above it, for the web server\'s PHP too.');
+        }
+    }
+
+    /**
+     * Whether the files that hold secrets are their owner's only, as Kennword creates them. Copied files
+     * keep the modes they had, which under the usual umask lets every user of the server read them.
+     */
+    private function fileModes(Config $config): void
+    {
+        $files = [
+            'RSA key' => $config->absolutePath($config->privateRsaKey()),
+            'config.json' => $config->absolutePath($config->configFile),
+            '.env' => base_path('.env'),
+        ];
+        try {
+            $name = $this->option('database');
+            $files['SQLite database'] = $this->sqliteFile(is_string($name) ? $name : null, $config);
+        } catch (ConfigException) {
+            // The database check reports it.
+        }
+        $files = array_filter($files, static fn (?string $file): bool => $file !== null && is_file($file));
+        $open = array_keys(array_filter($files, static fn (string $file): bool => PrivateFile::isOpen($file)));
+        if ($open !== []) {
+            $this->warning('File modes', implode(', ', $open).' open to other users',
+                'Other users of the server may read them; whoever reads the RSA key can sign login tokens for every account. As the user PHP runs as, run chmod 600 on them.');
+        } elseif ($files !== []) {
+            $this->ok('File modes', 'their owner\'s only');
         }
     }
 

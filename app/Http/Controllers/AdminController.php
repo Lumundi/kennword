@@ -40,6 +40,7 @@ use App\Notifications\Notify;
 use App\Support\Dates;
 use App\Support\HttpClient;
 use App\Support\LocalTimeZone;
+use App\Support\PrivateFile;
 use App\Support\Push;
 use App\Support\RateLimiter;
 use App\Support\Release;
@@ -787,9 +788,15 @@ final readonly class AdminController
         $folder = str_contains($database, '/') ? substr($database, 0, (int) strrpos($database, '/') + 1) : '';
         $backup = $folder.'db_'.Dates::now()->format('Ymd_His').'.sqlite3';
 
+        // VACUUM INTO fills an empty file, so the copy is its owner's only from the start, like the database.
+        $path = $this->config->absolutePath($backup);
+        $created = PrivateFile::create($path);
         try {
-            $this->databases->connection()->statement('VACUUM INTO ?', [$this->config->absolutePath($backup)]);
+            $this->databases->connection()->statement('VACUUM INTO ?', [$path]);
         } catch (QueryException) {
+            if ($created) {
+                @unlink($path);
+            }
             throw ApiError::message('Backup was unsuccessful '.ApiError::message('VACUUM INTO failed')->displayText());
         }
 

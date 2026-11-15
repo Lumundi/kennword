@@ -2,6 +2,7 @@
 
 namespace App\Config;
 
+use App\Support\PrivateFile;
 use InvalidArgumentException;
 
 /**
@@ -298,9 +299,10 @@ final class Config
         }
         // Every request reads the file, so it is replaced at once: one being written would read as empty and
         // leave that request with the environment alone.
+        // It holds the admin token and other secrets: a new file is its owner's only, an existing one keeps its mode.
         $temporary = $file.'.'.bin2hex(random_bytes(6)).'.tmp';
         $mode = @fileperms($file);
-        if (@file_put_contents($temporary, $builder->toJson()) === false
+        if (! PrivateFile::create($temporary, $builder->toJson())
             || ($mode !== false && ! @chmod($temporary, $mode & 0777))
             || ! @rename($temporary, $file)) {
             @unlink($temporary);
