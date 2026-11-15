@@ -36,12 +36,13 @@ class IconClient
     public function __construct(private readonly Config $config) {}
 
     /**
-     * get_page_with_referer: the response to a GET of the URL.
+     * get_page_with_referer: the response to a GET of the URL, within
+     * ICON_DOWNLOAD_TIMEOUT or the shorter time left of a download.
      *
      * @throws BlockedHost When the host is blocked, before or after resolving it
      * @throws HttpRequestFailed
      */
-    public function get(string $url, string $referer = ''): HttpResponse
+    public function get(string $url, string $referer = '', ?float $timeout = null): HttpResponse
     {
         // The resolver only sees names, so addresses in the URL are checked here.
         $parsed = Url::parse($url) ?? throw new HttpRequestFailed("Invalid URL: {$url}");
@@ -60,7 +61,9 @@ class IconClient
         $headers = $referer === '' ? self::HEADERS : [...self::HEADERS, 'Referer' => $referer];
         $cookies = CookieJar::load();
         try {
-            return HttpClient::get($parsed, $headers, $this->config->int('icon_download_timeout'), $cookies);
+            $limit = (float) $this->config->int('icon_download_timeout');
+
+            return HttpClient::get($parsed, $headers, $timeout === null ? $limit : min($limit, $timeout), $cookies);
         } finally {
             $cookies->save();
         }

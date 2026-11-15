@@ -385,7 +385,7 @@ Status: ✅ done (needs a test) · 🟨 partial · ⬜ todo · ➖ won't fix
 | ✅ | `ICON_REDIRECT_CODE` | src/config.rs:716 | 3 | 301, 302, 307 or 308 for icon_external. |
 | ✅ | `ICON_CACHE_TTL` | src/config.rs:718 | 3 | Cache-Control of icons and the age of cached ones. |
 | ✅ | `ICON_CACHE_NEGTTL` | src/config.rs:720 | 3 | Cache-Control of the fallback icon and the age of .miss markers. |
-| ✅ | `ICON_DOWNLOAD_TIMEOUT` | src/config.rs:722 | 2 | One timeout per request of the icon client, body included (App\Support\HttpClient::get). |
+| ✅ | `ICON_DOWNLOAD_TIMEOUT` | src/config.rs:722 | 3 | One deadline for the whole download of an icon, every page and icon request with its body (App\Icons\IconService::icon): Vaultwarden waits asynchronously, a PHP worker would wait for each request in turn. |
 | ✅ | `ICON_BLACKLIST_REGEX` | src/config.rs:725 | 2 | Copied to HTTP_REQUEST_BLOCK_REGEX when that is unset (ConfigBuilder). |
 | ✅ | `ICON_BLACKLIST_NON_GLOBAL_IPS` | src/config.rs:727 | 2 | The default of HTTP_REQUEST_BLOCK_NON_GLOBAL_IPS. |
 | ✅ | `HTTP_REQUEST_BLOCK_REGEX` | src/config.rs:731 | 4 | App\Support\HttpClient::blockReason for names, addresses and resolved addresses, on every redirect. |

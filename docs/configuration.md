@@ -83,6 +83,10 @@ The `config:` items in [PARITY.md](../PARITY.md) show the state of each setting 
   Vaultwarden sends in the background go out after the response.
 - **Rate limits** live in Laravel's cache (`storage/framework/cache`) instead of in memory, so all PHP
   workers share them. Vaultwarden keeps them per process.
+- **Icon downloads** stop after `ICON_DOWNLOAD_TIMEOUT` seconds in all: the page and every icon tried
+  share that one deadline, where Vaultwarden gives each request its own. A PHP worker waits for the
+  download, and a site that does not answer would otherwise hold it for minutes. A download that runs out
+  of time is remembered like any failure (`ICON_CACHE_NEGTTL`).
 - **Waiting on purpose.** Where Vaultwarden waits a second so that unknown addresses cannot be told
   apart by timing (the password hint, registration), a PHP worker waits with it; Vaultwarden's task
   waits without holding anything. The rate limits bound how many workers one address can keep busy.

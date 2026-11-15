@@ -44,8 +44,12 @@ final readonly class IconService
             return null;
         }
 
+        // ICON_DOWNLOAD_TIMEOUT says when to stop attempting to download an icon.
+        // Vaultwarden waits asynchronously; here a PHP worker waits, so all the
+        // page and icon requests of one download share that one deadline.
+        $deadline = microtime(true) + $this->config->int('icon_download_timeout');
         try {
-            [$icon, $type] = $this->downloadIcon($domain);
+            [$icon, $type] = $this->downloadIcon($domain, $deadline);
         } catch (BlockedHost $blocked) {
             // A blocked domain or address: no miss file, which would reveal it.
             Log::warning($blocked->getMessage());
@@ -140,25 +144,26 @@ final readonly class IconService
      *
      * @return array{list<array{int, string}>, string}
      */
-    public function iconUrls(string $domain): array
+    public function iconUrls(string $domain, ?float $deadline = null): array
     {
         $sslDomain = "https://{$domain}";
         $httpDomain = "http://{$domain}";
+        $deadline ??= microtime(true) + $this->config->int('icon_download_timeout');
 
         try {
-            $page = $this->client->get($sslDomain);
+            $page = $this->fetch($sslDomain, '', $deadline);
         } catch (BlockedHost $blocked) {
             $page = $blocked;
         } catch (HttpRequestFailed) {
             // Unless the host was blocked, HTTP is next, then the domain without
             // subdomains or with www. in front.
-            $page = $this->firstPage([$httpDomain]);
+            $page = $this->firstPage([$httpDomain], $deadline);
             if ($page instanceof HttpRequestFailed && filter_var($domain, FILTER_VALIDATE_IP) === false) {
                 $dots = substr_count($domain, '.');
                 $labels = explode('.', $domain);
                 $other = $dots > 1 ? implode('.', array_slice($labels, -2)) : "www.{$domain}";
                 if (HttpClient::validHost($other) !== null) {
-                    $page = $this->firstPage(["https://{$other}", "http://{$other}"]);
+                    $page = $this->firstPage(["https://{$other}", "http://{$other}"], $deadline);
                 }
             }
         }
@@ -230,9 +235,9 @@ final readonly class IconService
      *
      * @throws HttpRequestFailed
      */
-    private function downloadIcon(string $domain): array
+    private function downloadIcon(string $domain, float $deadline): array
     {
-        [$icons, $referer] = $this->iconUrls($domain);
+        [$icons, $referer] = $this->iconUrls($domain, $deadline);
         $icons = array_slice($icons, 0, 5);
 
         $buffer = '';
@@ -264,7 +269,7 @@ final readonly class IconService
 
             Log::debug("Trying {$href}");
             try {
-                $response = $this->client->get($href, $referer);
+                $response = $this->fetch($href, $referer, $deadline);
             } catch (HttpRequestFailed $failed) {
                 // Make sure all icons are checked before returning an error, unless the host is blocked.
                 if ($index === count($icons) - 1 || $failed instanceof BlockedHost) {
@@ -307,18 +312,33 @@ final readonly class IconService
      *
      * @param  non-empty-list<string>  $urls
      */
-    private function firstPage(array $urls): HttpResponse|HttpRequestFailed
+    private function firstPage(array $urls, float $deadline): HttpResponse|HttpRequestFailed
     {
         $failure = null;
         foreach ($urls as $url) {
             try {
-                return $this->client->get($url);
+                return $this->fetch($url, '', $deadline);
             } catch (HttpRequestFailed $failed) {
                 $failure = $failed;
             }
         }
 
         return $failure;
+    }
+
+    /**
+     * A request that ends at the download's deadline; past it, none is made.
+     *
+     * @throws HttpRequestFailed
+     */
+    private function fetch(string $url, string $referer, float $deadline): HttpResponse
+    {
+        $remaining = $deadline - microtime(true);
+        if ($remaining <= 0) {
+            throw new HttpRequestFailed("Icon download timed out before {$url}");
+        }
+
+        return $this->client->get($url, $referer, $remaining);
     }
 
     /**

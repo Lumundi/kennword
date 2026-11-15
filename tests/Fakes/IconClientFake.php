@@ -25,6 +25,11 @@ final class IconClientFake extends IconClient
      */
     public array $requests = [];
 
+    /**
+     * Microseconds each request takes, like a slow site.
+     */
+    public int $delay = 0;
+
     public function answer(string $url, string $body, int $status = 200, ?string $finalUrl = null): self
     {
         $this->sites[$url] = [$status, $body, $finalUrl ?? $url];
@@ -39,9 +44,10 @@ final class IconClientFake extends IconClient
         return $this;
     }
 
-    public function get(string $url, string $referer = ''): HttpResponse
+    public function get(string $url, string $referer = '', ?float $timeout = null): HttpResponse
     {
         $this->requests[] = [$url, $referer];
+        usleep($this->delay);
 
         $parsed = Url::parse($url) ?? throw new HttpRequestFailed("Invalid URL: {$url}");
         $reason = HttpClient::blockReason((string) $parsed->getAsciiHost());

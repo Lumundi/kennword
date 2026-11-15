@@ -81,6 +81,21 @@ class IconsTest extends TestCase
         $this->assertFileDoesNotExist("{$this->cache}/example.com.png.miss");
     }
 
+    #[Parity('config:ICON_DOWNLOAD_TIMEOUT')]
+    public function test_one_deadline_for_the_whole_download(): void
+    {
+        // Eight requests of 0.4 s each would hold a worker for 3.2 s.
+        $this->changeVaultwardenEnvironment(['ICON_DOWNLOAD_TIMEOUT' => '1']);
+        $this->sites->delay = 400_000;
+
+        $start = microtime(true);
+        $this->get('/icons/example.com/icon.png')->assertStatus(200)->assertHeader('Cache-Control', 'immutable, max-age=259200, public');
+        $this->assertLessThan(2.0, microtime(true) - $start);
+        $this->assertLessThan(8, count($this->sites->requests));
+        // Remembered like any failure, so the next request costs nothing.
+        $this->assertFileExists("{$this->cache}/example.com.png.miss");
+    }
+
     public function test_other_ways_to_the_page(): void
     {
         // HTTP when HTTPS fails, and after redirects the icons are relative to the last URL.
