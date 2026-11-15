@@ -1,0 +1,3 @@
+# The database, the signing key, config.json and uploads: never served,
+# whatever the document root.
+Require all denied

@@ -1,0 +1,2 @@
+# Logs, caches and sessions: never served, whatever the document root.
+Require all denied

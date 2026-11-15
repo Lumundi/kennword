@@ -1,0 +1,10 @@
+# Kennword's document root is public/. Some hosts serve this folder instead and
+# cannot change that; then every request goes to public/, so the data folder,
+# .env, the logs and the code are never served. Without mod_rewrite, nothing is.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^(?!public/)(.*)$ public/$1 [L]
+</IfModule>
+<IfModule !mod_rewrite.c>
+    Require all denied
+</IfModule>

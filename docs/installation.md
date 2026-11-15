@@ -70,7 +70,8 @@ archive of any commit [yourself](#building-an-archive).
 1. Unpack the archive on the server, or unpack it on your computer and upload the folder
    `kennword-<version>` it holds (by SFTP, FTP or the host's file manager). Rename the folder as you
    like, `kennword` below. Only its `public` folder is served: keep the folder itself out of the
-   document root and point the document root at `public` (see [Web server](#web-server)).
+   document root and point the document root at `public` (see [Web server](#web-server)). If your host
+   cannot do that, read [When the host serves the whole folder](#when-the-host-serves-the-whole-folder).
 2. Let the user PHP runs as write to `data/`, `storage/` and `bootstrap/cache/` (see
    [Permissions](#permissions)). Uploaded by FTP, the files usually belong to that user already.
 3. Copy `.env.example` to `.env` and set at least `DOMAIN` (see [Configuring it](#configuring-it), also
@@ -184,6 +185,19 @@ able to write to:
 Nothing else needs to be writable. Keep `data/` out of the web root; the default layout does that,
 because only `public/` is served.
 
+### When the host serves the whole folder
+
+Some shared hosts serve a fixed folder and cannot point the document root at `public/`. Serving the
+installation folder itself would expose `.env`, the database, the RSA key that signs every login token,
+`config.json` and the logs. With Apache or LiteSpeed, three `.htaccess` files that come with Kennword
+prevent that: the one in the installation folder sends every request on to `public/`, and those in
+`data/` and `storage/` refuse every request. They need `AllowOverride All` (or at least `FileInfo` and
+`AuthConfig`), which such hosts usually allow. Check it after installing: `https://<your host>/data/.htaccess`
+must answer 403, and `https://<your host>/composer.json` must not show the file.
+
+nginx and other servers ignore `.htaccess` files. With them, never serve the installation folder: point
+the document root at `public/`, or install Kennword elsewhere.
+
 ## PHP settings
 
 Vaultwarden accepts attachments and Sends up to 525 MB. Let PHP accept them as well:
@@ -201,6 +215,7 @@ PHP stores the files of a multipart request in `upload_tmp_dir` before Kennword 
 whoever sends it and to whichever address; Vaultwarden reads a body only for a route that takes one, after
 checking the login. Keep `upload_tmp_dir` on a disk with room for a few uploads rather than in memory, and
 let the web server limit the size of a request (`client_max_body_size` and `LimitRequestBody` below).
+
 Kennword itself refuses JSON bodies above 20 MB and forms above 32 KiB with 413, like Vaultwarden.
 
 ## Web server

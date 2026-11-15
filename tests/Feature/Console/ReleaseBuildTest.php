@@ -26,7 +26,7 @@ class ReleaseBuildTest extends TestCase
      * Files of the checkout that the archives keep: some of what the
      * installation reads, and the licenses that travel with the code.
      */
-    private const array KEPT = ['.env.example', 'LICENSE.txt', 'LICENSES/GPL-3.0.txt', 'NOTICE.md', 'artisan', 'database/vaultwarden/sqlite', 'parity/reference.json', 'parity/schema/sqlite.json'];
+    private const array KEPT = ['.env.example', '.htaccess', 'data/.htaccess', 'storage/.htaccess', 'LICENSE.txt', 'LICENSES/GPL-3.0.txt', 'NOTICE.md', 'artisan', 'database/vaultwarden/sqlite', 'parity/reference.json', 'parity/schema/sqlite.json'];
 
     private const array SOURCES = [
         'https://github.com/vaultwarden/vw_web_builds/archive/refs/tags/v2026.10.1%2B0.tar.gz' => 'web-vault-2026.10.1-source-vw_web_builds.tar.gz',
