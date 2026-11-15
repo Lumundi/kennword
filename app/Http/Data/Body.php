@@ -21,13 +21,19 @@ final class Body
     public const int FORM_LIMIT = 32 * 1024;
 
     /**
+     * serde_json's recursion limit: 127 nested arrays or objects, which is
+     * PHP's depth 128. Deeper documents are a syntax error, so a 400.
+     */
+    public const int JSON_DEPTH = 128;
+
+    /**
      * Json<T>: the content type is not checked; invalid JSON is a 400.
      *
      * @throws HttpStatus
      */
     public static function json(Request $request): Fields
     {
-        $decoded = json_decode(self::content($request, self::JSON_LIMIT), false, 512, JSON_BIGINT_AS_STRING);
+        $decoded = json_decode(self::content($request, self::JSON_LIMIT), false, self::JSON_DEPTH, JSON_BIGINT_AS_STRING);
         if (json_last_error() !== JSON_ERROR_NONE) {
             throw new HttpStatus(400, 'Invalid JSON: '.json_last_error_msg());
         }
@@ -44,7 +50,7 @@ final class Body
      */
     public static function jsonList(Request $request): array
     {
-        $decoded = json_decode(self::content($request, self::JSON_LIMIT), false, 512, JSON_BIGINT_AS_STRING);
+        $decoded = json_decode(self::content($request, self::JSON_LIMIT), false, self::JSON_DEPTH, JSON_BIGINT_AS_STRING);
         if (json_last_error() !== JSON_ERROR_NONE) {
             throw new HttpStatus(400, 'Invalid JSON: '.json_last_error_msg());
         }

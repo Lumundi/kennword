@@ -724,7 +724,7 @@ final readonly class AdminController
         $this->requireFormat($request, 'application/json');
         $this->token($request);
 
-        $data = json_decode(Body::content($request, Body::JSON_LIMIT), false, 512, JSON_BIGINT_AS_STRING);
+        $data = json_decode(Body::content($request, Body::JSON_LIMIT), false, Body::JSON_DEPTH, JSON_BIGINT_AS_STRING);
         if (json_last_error() !== JSON_ERROR_NONE) {
             throw new HttpStatus(400, 'Invalid JSON: '.json_last_error_msg());
         }
