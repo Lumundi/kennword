@@ -61,7 +61,7 @@ final class SoftwareAuthenticator
      * The device response of a registration.
      *
      * @param  array<mixed>  $options  The publicKey options of the server
-     * @param  'none'|'packed'|'packed-x5c'|'fido-u2f'  $format
+     * @param  'none'|'packed'|'packed-x5c'|'packed-garbage-x5c'|'fido-u2f'  $format
      * @return array<string, mixed>
      */
     public function register(array $options, string $format = 'none', ?string $origin = null, ?string $type = null): array
@@ -78,8 +78,10 @@ final class SoftwareAuthenticator
             'none' => self::map([]),
             'packed' => self::map([['alg', -7], ['sig', self::bytes($this->sign($authData.$clientDataHash))]]),
             'packed-x5c', 'fido-u2f' => $this->certified($format, $authData, $rpIdHash, $clientDataHash),
+            // A certificate OpenSSL cannot read.
+            'packed-garbage-x5c' => self::map([['alg', -7], ['sig', self::bytes($this->sign($authData.$clientDataHash))], ['x5c', [self::bytes("\x30\x03garbage")]]]),
         };
-        $object = self::map([['fmt', $format === 'packed-x5c' ? 'packed' : $format], ['attStmt', $statement], ['authData', self::bytes($authData)]]);
+        $object = self::map([['fmt', str_starts_with($format, 'packed') ? 'packed' : $format], ['attStmt', $statement], ['authData', self::bytes($authData)]]);
 
         return [
             'id' => self::base64($this->credentialId),

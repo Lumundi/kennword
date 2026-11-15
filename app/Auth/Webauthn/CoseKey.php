@@ -198,7 +198,7 @@ final readonly class CoseKey
             'EC_OKP' => Der::sequence(Der::sequence(Der::oid(self::OKP_CURVES[$this->curve][2])), Der::bitString($this->x)),
         };
 
-        return openssl_pkey_get_public(Der::pem($spki, 'PUBLIC KEY')) ?: throw new WebauthnError('OpenSSLError');
+        return @openssl_pkey_get_public(Der::pem($spki, 'PUBLIC KEY')) ?: throw new WebauthnError('OpenSSLError');
     }
 
     /**

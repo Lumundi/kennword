@@ -67,6 +67,9 @@ class WebauthnTest extends TestCase
         // The failed attempt used up the challenge.
         $this->postJson('/api/two-factor/webauthn', [...$activate, 'deviceResponse' => $key->register($options)], $this->session)
             ->assertStatus(400)->assertJsonPath('message', "Can't recover challenge");
+        // A certificate OpenSSL cannot read is the client's error, not the server's.
+        $this->postJson('/api/two-factor/webauthn', [...$activate, 'deviceResponse' => $key->register($this->challenge($token), 'packed-garbage-x5c')], $this->session)
+            ->assertStatus(400)->assertJsonPath('message', 'Webauthn');
 
         $options = $this->challenge($token);
         $this->postJson('/api/two-factor/webauthn', [...$activate, 'deviceResponse' => $key->register($options)], $this->session)

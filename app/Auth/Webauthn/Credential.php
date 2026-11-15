@@ -194,7 +194,7 @@ final class Credential
         $certificates = [];
         foreach ($variants[$variant] as $certificate) {
             $der = Base64UrlSafe::decode($certificate);
-            if ($der === null || openssl_x509_read(Der::pem($der, 'CERTIFICATE')) === false) {
+            if ($der === null || @openssl_x509_read(Der::pem($der, 'CERTIFICATE')) === false) {
                 return null;
             }
             $certificates[] = $der;

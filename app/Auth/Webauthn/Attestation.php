@@ -211,9 +211,12 @@ final class Attestation
      */
     private static function certificateKey(string $der): OpenSSLAsymmetricKey
     {
-        $certificate = openssl_x509_read(Der::pem($der, 'CERTIFICATE')) ?: throw new WebauthnError('OpenSSLError');
+        // OpenSSL warns about what it cannot read, and Laravel would turn the
+        // warning into a 500; Vaultwarden answers a client's bad certificate
+        // with its Webauthn error.
+        $certificate = @openssl_x509_read(Der::pem($der, 'CERTIFICATE')) ?: throw new WebauthnError('OpenSSLError');
 
-        return openssl_pkey_get_public($certificate) ?: throw new WebauthnError('OpenSSLError');
+        return @openssl_pkey_get_public($certificate) ?: throw new WebauthnError('OpenSSLError');
     }
 
     /**
@@ -244,7 +247,7 @@ final class Attestation
      */
     private static function assertPackedCertificate(string $der): void
     {
-        $parsed = openssl_x509_parse(Der::pem($der, 'CERTIFICATE'), false) ?: throw new WebauthnError('AttestationStatementX5CInvalid');
+        $parsed = @openssl_x509_parse(Der::pem($der, 'CERTIFICATE'), false) ?: throw new WebauthnError('AttestationStatementX5CInvalid');
         $subject = is_array($parsed['subject'] ?? null) ? $parsed['subject'] : [];
         $first = static fn (string $name): mixed => is_array($subject[$name] ?? null) ? ($subject[$name][0] ?? null) : ($subject[$name] ?? null);
         if (($parsed['version'] ?? null) !== 2 || $first('countryName') === null || $first('organizationName') === null || $first('commonName') === null
