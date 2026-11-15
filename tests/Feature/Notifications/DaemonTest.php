@@ -212,6 +212,20 @@ class DaemonTest extends TestCase
         $this->assertSame(101, WebSocketClient::connect($this->url, '/notifications/anonymous-hub?token=more')->status);
     }
 
+    public function test_an_account_holds_a_limited_number_of_connections(): void
+    {
+        $connections = [];
+        for ($i = 0; $i < Subscriptions::MAX_CONNECTIONS_PER_USER; $i++) {
+            $connections[] = $connection = WebSocketClient::connect($this->url, "/notifications/hub?access_token={$this->token}");
+            $this->assertSame(101, $connection->status);
+        }
+
+        // One more is accepted, and the oldest makes way.
+        $this->assertSame(101, WebSocketClient::connect($this->url, "/notifications/hub?access_token={$this->token}")->status);
+        $this->assertTrue($connections[0]->closedWithin(2.0));
+        $this->assertFalse($connections[1]->closedWithin(0.3));
+    }
+
     /**
      * Headers with underscores are dropped, as web servers do before PHP:
      * otherwise X_Real_IP would pass for the IP header of a trusted proxy.

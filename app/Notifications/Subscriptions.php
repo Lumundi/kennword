@@ -24,6 +24,13 @@ final class Subscriptions
     public const int MAX_ANONYMOUS_CONNECTIONS = Server::MAX_CONNECTIONS / 4;
 
     /**
+     * An account needs a connection per device and open web vault. Vaultwarden has no limit; past
+     * this, the account's oldest connection makes way, so that one account cannot take all of
+     * Server::MAX_CONNECTIONS from everybody else.
+     */
+    public const int MAX_CONNECTIONS_PER_USER = 50;
+
+    /**
      * @var array<string, array<int, WebSocketConnection>>
      */
     private array $users = [];

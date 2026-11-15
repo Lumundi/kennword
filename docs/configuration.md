@@ -87,6 +87,8 @@ The `config:` items in [PARITY.md](../PARITY.md) show the state of each setting 
   share that one deadline, where Vaultwarden gives each request its own. A PHP worker waits for the
   download, and a site that does not answer would otherwise hold it for minutes. A download that runs out
   of time is remembered like any failure (`ICON_CACHE_NEGTTL`).
+- **Live notifications per account.** The daemon holds 800 connections in all; one account may hold 50,
+  and past that its oldest connection makes way. Vaultwarden has no such limit.
 - **Waiting on purpose.** Where Vaultwarden waits a second so that unknown addresses cannot be told
   apart by timing (the password hint, registration), a PHP worker waits with it; Vaultwarden's task
   waits without holding anything. The rate limits bound how many workers one address can keep busy.

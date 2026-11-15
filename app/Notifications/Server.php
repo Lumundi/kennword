@@ -505,6 +505,12 @@ final class Server
         $client->ip = $response->ip;
         $client->userId = $response->userId;
         $client->anonymousToken = $response->anonymousToken;
+        if ($client->userId !== null) {
+            $own = $this->subscriptions->ofUser($client->userId);
+            if (count($own) >= Subscriptions::MAX_CONNECTIONS_PER_USER) {
+                $this->close($own[0]);
+            }
+        }
         $this->subscriptions->subscribe($client);
 
         // Like tokio's interval, the first ping goes out at once.
