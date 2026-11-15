@@ -3,8 +3,8 @@
 > Kennword was called Vaultwarphpen until version 0.2.0. The reviews below were made under that name;
 > the commits and releases they name are the same.
 
-A review of Kennword's PHP code before people trust it with real passwords. It asked one question
-above all: wherever Vaultwarden checks something, does the port check the same thing, the same way?
+A review of Kennword's PHP code. It asked one question above all: wherever Vaultwarden checks
+something, does the port check the same thing, the same way?
 
 This was an internal review, carried out with an AI coding assistant (Claude Code) and read against
 Vaultwarden's source. It is not an independent audit. It found and fixed real vulnerabilities, which

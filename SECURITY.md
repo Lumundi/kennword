@@ -5,8 +5,9 @@ believe you have found one, please tell us privately first. Thank you!
 
 ## Status
 
-Kennword is in early development and has not been independently audited; the findings of two
-internal reviews are in [docs/security-review.md](docs/security-review.md). Only the latest
+Kennword has not been independently audited. What is checked, what is open and how to run it with care
+is in the README's [security status](README.md#security-status); the findings of two internal reviews
+are in [docs/security-review.md](docs/security-review.md). Only the latest
 [release](https://github.com/Lumundi/kennword/releases) and the latest commit on `main` are
 supported; fixes are not backported to older releases.
 

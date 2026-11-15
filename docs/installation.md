@@ -5,10 +5,10 @@ the data lives in a database and a data folder. This guide sets it up on a serve
 hosting package that gives you PHP 8.5 and a shell, with Composer or from a
 [release archive](#installing-from-a-release-archive) that needs no Composer.
 
-> [!WARNING]
-> Kennword is in early development and has not been independently audited (see the
-> [security review](security-review.md)). See the status in the [README](../README.md#status) before
-> you put real data into it.
+> [!IMPORTANT]
+> Kennword has not been independently audited. Before you put real data into it, read its
+> [security status](../README.md#security-status), set up [backups](#backups) and keep the
+> [way back to Vaultwarden](migrating-from-vaultwarden.md#going-back) in mind.
 
 ## Requirements
 
@@ -447,9 +447,22 @@ PUSH_INSTALLATION_KEY=...
 
 This needs no daemon: the web requests send the notifications themselves, once their response is out.
 
+## Backups
+
+Back up regularly, and before every update:
+
+- **The database.** With SQLite, *Backup database* in the admin panel writes a consistent copy next to
+  `db.sqlite3`; or stop Kennword (with the scheduler and the notifications daemon) and copy `db.sqlite3`
+  with its `-wal` and `-shm` files. With MySQL or PostgreSQL, use `mysqldump` or `pg_dump`.
+- **The `data` folder:** the RSA key, attachments, Sends and `config.json`. The icon cache can be left out.
+- **The settings:** `.env`, or wherever the environment variables are set.
+
+A backup holds the same secrets as the server (the RSA key signs login tokens for every account), so keep
+it as well protected, and somewhere else. Try a restore once, into a separate folder and database.
+
 ## Updating
 
-1. Back up the database and the `data` folder.
+1. Back up the database and the `data` folder ([Backups](#backups)).
 2. Fetch the new version and its dependencies. In a Git checkout:
 
    ```bash

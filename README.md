@@ -35,11 +35,10 @@ Until version 0.2.0 it was called Vaultwarphpen; we renamed it so that it does n
 name. *Kennwort* is German for password: Kennword keeps the German "kenn" (to know) and makes the rest
 English. Say it "KEN-word".
 
-> [!WARNING]
-> Kennword is in early development and has not been independently audited. Two internal reviews
-> against Vaultwarden ([security review](docs/security-review.md)) found and fixed vulnerabilities, so
-> more may remain. Do not trust it with real passwords yet; try it with test accounts or with a copy of
-> your data.
+> [!IMPORTANT]
+> Kennword has not been independently audited. Its answers are compared with Vaultwarden's on every
+> change, and it keeps Vaultwarden's database and data folder, so an installation can always go back.
+> [Security status](#security-status) says what is checked, what is open and how to run it with care.
 
 ## Why a PHP port
 
@@ -68,9 +67,41 @@ pinned Vaultwarden version and whether it is ported. In short:
   the database pool sizes; [Configuration](docs/configuration.md#differences-from-vaultwarden) lists
   every difference.
 
-Every ported route is compared with Vaultwarden itself: the differential tests send the same requests
-to both servers and compare the answers. End-to-end tests drive the official web vault and CLI against
-both, with the clients' own cryptography ([docs/clients.md](docs/clients.md)).
+## Security status
+
+**What is checked**
+
+- **Behaviour:** every ported route is compared with Vaultwarden itself. The differential tests send the
+  same requests to both servers and compare the answers, in CI on every change to the code.
+- **Clients:** end-to-end tests drive the official web vault and the Bitwarden CLI, with the clients' own
+  cryptography, against Kennword and against Vaultwarden ([docs/clients.md](docs/clients.md)).
+- **Data:** CI lets Vaultwarden fill an installation, moves it to Kennword and back on SQLite, MySQL and
+  PostgreSQL, and compares what the clients read after each move.
+- **Code:** internal reviews against Vaultwarden's source found and fixed vulnerabilities
+  ([security review](docs/security-review.md)). PHPStan runs at its strictest level, and `composer audit`
+  in every CI run.
+
+**What is open**
+
+- No independent audit. It is the condition for version 1.0; when it happens has not been decided yet.
+- Kennword is young (its first release was in October 2026), and its code was written with an AI coding
+  assistant. The internal reviews were made with one too, and each of them found vulnerabilities, so more
+  may remain.
+
+**Running it with care**
+
+- Back up the database and the `data` folder regularly and before every update
+  ([Backups](docs/installation.md#backups)), and try a restore once.
+- Keep the way back open: Kennword writes Vaultwarden's database and data folder in Vaultwarden's own
+  formats. If Kennword lets you down, stop it and start Vaultwarden on the same data; the clients stay
+  logged in ([Going back](docs/migrating-from-vaultwarden.md#going-back)).
+- Coming from Vaultwarden, try Kennword on a copy of your data first; a new installation can start with a
+  few users.
+- Watch the repository's releases and
+  [security advisories](https://github.com/Lumundi/kennword/security/advisories): only the latest release
+  gets fixes.
+
+If your rules ask for an independently audited server, Kennword does not meet them yet.
 
 ## Requirements
 
