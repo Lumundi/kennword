@@ -7,7 +7,9 @@ use App\Auth\Jwt;
 use App\Auth\LoginClaims;
 use App\Models\Device;
 use App\Models\User;
+use App\Support\Push;
 use App\Support\Random;
+use Illuminate\Support\Facades\Log;
 use Tests\Attributes\Parity;
 use Tests\Concerns\UsesFakeServices;
 use Tests\Concerns\UsesVaultwardenDatabase;
@@ -131,6 +133,17 @@ class PushTest extends TestCase
         $this->assertSame(['/identity/connect/token', '/push/register', '/push/send'], array_column($recorded, 'path'));
         $logout = $this->arrayOf($recorded[2]['body']);
         $this->assertSame([11, $this->user->uuid, null], [$logout['type'], $logout['userId'], $logout['deviceId']]);
+    }
+
+    public function test_a_device_without_a_push_token_is_logged_escaped(): void
+    {
+        // The id is the client's device identifier: a line break must not start a log line of its own.
+        $phone = Device::new("phone\n[2026-01-01 00:00:00] production.ERROR: forged", $this->user->uuid, 'Pixel', 0);
+        $log = Log::spy();
+
+        Push::registerDevice($phone);
+
+        $log->shouldHaveReceived('warning')->with('Skipping the registration of the device "phone\\n[2026-01-01 00:00:00] production.ERROR: forged" because the push_token field is empty.');
     }
 
     public function test_users_without_a_phone_send_nothing(): void

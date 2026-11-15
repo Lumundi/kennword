@@ -82,7 +82,8 @@ final class Push
         }
 
         if ($device->push_token === null) {
-            logger()->warning("Skipping the registration of the device \"{$device->uuid}\" because the push_token field is empty.");
+            // The id is the client's device identifier, so it is escaped like Rust's {:?}.
+            logger()->warning('Skipping the registration of the device "'.EscapeDebug::of($device->uuid).'" because the push_token field is empty.');
             logger()->warning('To get rid of this message you need to logout, clear the app data and login again on the device.');
 
             return;
