@@ -250,6 +250,8 @@ server {
     root /var/www/kennword/public;
 
     # ssl_certificate ...;
+    # Browsers then use HTTPS only for this host, for a year.
+    add_header Strict-Transport-Security "max-age=31536000" always;
 
     client_max_body_size 525M;
 
@@ -288,6 +290,8 @@ Point the document root at `public` and allow its `.htaccess`, which needs `mod_
     LimitRequestBody 550502400
 
     # SSLEngine on ...
+    # Browsers then use HTTPS only for this host, for a year (needs mod_headers).
+    Header always set Strict-Transport-Security "max-age=31536000"
 </VirtualHost>
 ```
 
