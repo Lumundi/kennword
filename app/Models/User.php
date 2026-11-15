@@ -412,10 +412,14 @@ final class User extends Model
 
     /**
      * crypto::hash_password: PBKDF2-HMAC-SHA256 with 32 bytes of output.
+     * OpenSSL's implementation gives the same bytes as hash_pbkdf2() in a
+     * fraction of the time, which matters at 600,000 iterations per login.
      */
     public static function hashPassword(string $password, string $salt, int $iterations): string
     {
-        return hash_pbkdf2('sha256', $password, $salt, max(1, $iterations), 32, true);
+        $hash = openssl_pbkdf2($password, $salt, 32, max(1, $iterations), 'sha256');
+
+        return $hash === false ? hash_pbkdf2('sha256', $password, $salt, max(1, $iterations), 32, true) : $hash;
     }
 
     /**
