@@ -66,10 +66,13 @@ final readonly class UploadData
     /**
      * TempFile::raw_name, unsanitized: the encrypted file name. PHP cuts the
      * name at the last slash, which base64 contains; its full path is whole.
+     * multer drops a file name that is not UTF-8, so there is none then.
      */
     public function rawName(): ?string
     {
-        return $this->file?->getClientOriginalPath();
+        $name = $this->file?->getClientOriginalPath();
+
+        return $name !== null && mb_check_encoding($name, 'UTF-8') ? $name : null;
     }
 
     /**

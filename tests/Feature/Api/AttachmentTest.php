@@ -126,6 +126,9 @@ class AttachmentTest extends TestCase
             ->assertStatus(400)->assertJsonPath('message', 'No attachment key provided');
         $this->call('POST', "/api/ciphers/{$this->cipherId}/attachment", ['key' => '2.k', 'data' => 'plain'], [], [], $this->transformHeadersToServerVars([...$this->auth, 'Content-Type' => 'multipart/form-data; boundary=x']))
             ->assertStatus(400)->assertJsonPath('message', 'No filename provided');
+        // multer drops a file name that is not UTF-8; it would break every sync containing it.
+        $this->upload("/api/ciphers/{$this->cipherId}/attachment", UploadedFile::fake()->createWithContent("2.\xff\xfe", 'x'), ['key' => '2.key'])
+            ->assertStatus(400)->assertJsonPath('message', 'No filename provided');
         $this->postJson("/api/ciphers/{$this->cipherId}/attachment", ['key' => '2.k'], $this->auth)->assertStatus(404)->assertJsonPath('error.code', 404);
         $this->post("/api/ciphers/{$this->cipherId}/attachment", [], ['Content-Type' => 'application/json'])->assertStatus(404);
 
