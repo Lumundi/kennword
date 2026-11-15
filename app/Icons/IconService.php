@@ -44,10 +44,7 @@ final readonly class IconService
             return null;
         }
 
-        // ICON_DOWNLOAD_TIMEOUT says when to stop attempting to download an icon.
-        // Vaultwarden waits asynchronously; here a PHP worker waits, so all the
-        // page and icon requests of one download share that one deadline.
-        $deadline = microtime(true) + $this->config->int('icon_download_timeout');
+        $deadline = $this->deadline();
         try {
             [$icon, $type] = $this->downloadIcon($domain, $deadline);
         } catch (BlockedHost $blocked) {
@@ -148,7 +145,7 @@ final readonly class IconService
     {
         $sslDomain = "https://{$domain}";
         $httpDomain = "http://{$domain}";
-        $deadline ??= microtime(true) + $this->config->int('icon_download_timeout');
+        $deadline ??= $this->deadline();
 
         try {
             $page = $this->fetch($sslDomain, '', $deadline);
@@ -324,6 +321,17 @@ final readonly class IconService
         }
 
         return $failure;
+    }
+
+    /**
+     * When a download stops. ICON_DOWNLOAD_TIMEOUT bounds each request, as in
+     * Vaultwarden, which waits asynchronously. Here a PHP worker waits, so the
+     * page and icon requests of one download also share a deadline: twice that
+     * time, enough for a request that runs out of time and the one after it.
+     */
+    private function deadline(): float
+    {
+        return microtime(true) + 2 * $this->config->int('icon_download_timeout');
     }
 
     /**
