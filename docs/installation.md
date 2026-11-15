@@ -215,6 +215,12 @@ PHP stores the files of a multipart request in `upload_tmp_dir` before Kennword 
 whoever sends it and to whichever address; Vaultwarden reads a body only for a route that takes one, after
 checking the login. Keep `upload_tmp_dir` on a disk with room for a few uploads rather than in memory, and
 let the web server limit the size of a request (`client_max_body_size` and `LimitRequestBody` below).
+Only these routes take large bodies, so a server that limits the size per location can keep every other
+one at a few megabytes:
+
+- `POST /api/ciphers/<id>/attachment`, `/attachment-admin`, `/attachment/<attachment id>` and
+  `/attachment/<attachment id>/share`
+- `POST /api/sends/<id>/file/<file id>`
 
 Kennword itself refuses JSON bodies above 20 MB and forms above 32 KiB with 413, like Vaultwarden.
 
