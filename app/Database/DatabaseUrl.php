@@ -44,9 +44,18 @@ final class DatabaseUrl
 
         throw new ConfigException(
             '`DATABASE_URL` does not match any known database scheme (mysql://, postgresql://, sqlite://) and no existing '
-            ."SQLite database was found at '{$url}'. If you intend to use SQLite, use an explicit `sqlite://` scheme in your "
+            ."SQLite database was found at '".self::withoutPassword($url)."'. If you intend to use SQLite, use an explicit `sqlite://` scheme in your "
             .'`DATABASE_URL`. Otherwise, check your DATABASE_URL for typos or quoting issues.'
         );
+    }
+
+    /**
+     * The URL with the password of its user info masked: the message lands in
+     * the log and in output that people share.
+     */
+    public static function withoutPassword(string $url): string
+    {
+        return (string) preg_replace('#^([^:/?\#]*://[^/?\#@:]*):[^/?\#]*@#', '$1:***@', $url);
     }
 
     /**

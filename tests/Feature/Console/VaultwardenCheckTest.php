@@ -193,6 +193,17 @@ class VaultwardenCheckTest extends TestCase
         $this->assertPrivate($output, []);
     }
 
+    public function test_a_mistyped_database_url_is_not_shown(): void
+    {
+        $this->changeVaultwardenEnvironment(['DATABASE_URL' => 'mysq://dbuser:S3cr3tPassw0rd@db.example.com/vw']);
+        config(['database.default' => 'vaultwarden']);
+
+        [$status, $output] = $this->check();
+        $this->assertSame(1, $status, $output);
+        $this->assertMatchesRegularExpression('/Database URL \.+ unknown scheme/', $output);
+        $this->assertPrivate($output, ['S3cr3tPassw0rd', 'db.example.com', 'dbuser']);
+    }
+
     /**
      * A migrated database with an RSA key and the folders Vaultwarden makes;
      * SQLite as a file in the data folder, where Vaultwarden keeps it.

@@ -59,6 +59,19 @@ class DatabaseUrlTest extends TestCase
         DatabaseUrl::type('data/missing.db', $this->config());
     }
 
+    public function test_an_unknown_scheme_does_not_show_the_password(): void
+    {
+        try {
+            DatabaseUrl::type('mysq://dbuser:S3cr3t:Pass@db.example.com/vw', $this->config());
+            $this->fail('An unknown scheme is refused.');
+        } catch (ConfigException $exception) {
+            $this->assertStringContainsString("found at 'mysq://dbuser:***@db.example.com/vw'", $exception->getMessage());
+            $this->assertStringNotContainsString('S3cr3t', $exception->getMessage());
+        }
+        $this->assertSame('data/missing.db', DatabaseUrl::withoutPassword('data/missing.db'));
+        $this->assertSame('mysql://user@host/db', DatabaseUrl::withoutPassword('mysql://user@host/db'));
+    }
+
     public function test_mysql_url(): void
     {
         $connection = DatabaseUrl::connection($this->config([

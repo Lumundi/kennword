@@ -221,7 +221,14 @@ class VaultwardenCheck extends Command
         $this->section('Database');
         $name = $this->option('database');
         // Before connecting, which would switch on a write-ahead log of our own.
-        $file = $this->sqliteFile(is_string($name) ? $name : null, $config);
+        try {
+            $file = $this->sqliteFile(is_string($name) ? $name : null, $config);
+        } catch (ConfigException) {
+            // Its message quotes the URL, which this output must not show.
+            $this->problem('Database URL', 'unknown scheme', 'Start DATABASE_URL with mysql://, postgresql:// or sqlite://.');
+
+            return null;
+        }
         if ($file !== null && ! is_file($file)) {
             $this->problem('SQLite database', 'missing', 'Copy db.sqlite3 from Vaultwarden\'s data folder, or point DATABASE_URL at it.');
 
