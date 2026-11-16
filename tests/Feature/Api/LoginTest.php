@@ -6,6 +6,8 @@ use App\Auth\Jwt;
 use App\Auth\JwtIssuer;
 use App\Mail\Transport;
 use App\Models\Device;
+use App\Models\Organization;
+use App\Models\OrganizationApiKey;
 use App\Models\User;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
@@ -152,6 +154,35 @@ class LoginTest extends TestCase
         $this->postForm([...$fields, 'client_secret' => 'wrong'])->assertStatus(400)->assertJsonPath('message', 'Incorrect client_secret');
         $this->postForm([...$fields, 'client_id' => 'judy'])->assertStatus(400)->assertJsonPath('message', 'Malformed client_id');
         $this->postForm([...$fields, 'scope' => 'other'])->assertStatus(400)->assertJsonPath('message', 'Scope not supported');
+    }
+
+    /**
+     * Kennword: with SSO_ONLY, the personal API key logs in no more than the
+     * master password does. Organization API keys are not affected.
+     */
+    public function test_sso_only_refuses_the_personal_api_key(): void
+    {
+        $this->user->api_key = 'secret-api-key';
+        $this->user->save();
+        $fields = ['grant_type' => 'client_credentials', 'scope' => 'api', 'client_id' => "user.{$this->user->uuid}",
+            'client_secret' => 'secret-api-key', 'device_identifier' => self::DEVICE, 'device_name' => 'cli', 'device_type' => '25'];
+        $sso = ['SSO_ENABLED' => 'true', 'SSO_AUTHORITY' => 'https://sso.example.com', 'SSO_CLIENT_ID' => 'vaultwarden', 'SSO_CLIENT_SECRET' => 'secret'];
+
+        // SSO alone leaves the key working.
+        $this->changeVaultwardenEnvironment($sso);
+        $this->postForm($fields)->assertStatus(200);
+
+        $this->changeVaultwardenEnvironment([...$sso, 'SSO_ONLY' => 'true']);
+        $this->login()->assertStatus(400)->assertJsonPath('message', 'SSO sign-in is required');
+        $this->postForm($fields)->assertStatus(400)->assertJsonPath('message', 'SSO sign-in is required');
+        $this->postForm([...$fields, 'client_secret' => 'wrong'])->assertStatus(400)->assertJsonPath('message', 'SSO sign-in is required');
+
+        // The organization's key still opens the public API.
+        $org = Organization::new('2.org', 'billing@example.com', null, null);
+        $org->save();
+        OrganizationApiKey::new($org->uuid, 'org-api-key')->save();
+        $this->postForm(['grant_type' => 'client_credentials', 'scope' => 'api.organization', 'client_id' => "organization.{$org->uuid}",
+            'client_secret' => 'org-api-key'])->assertStatus(200)->assertJsonPath('scope', 'api.organization');
     }
 
     #[Parity('config:LOGIN_RATELIMIT_SECONDS')]

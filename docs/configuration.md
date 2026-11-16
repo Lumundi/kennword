@@ -147,6 +147,10 @@ The `config:` items in [PARITY.md](../PARITY.md) show the state of each setting 
     The public API refuses a token issued before the key's last rotation (`revision_date`), to the
     second, so a token issued in the second of the rotation still works. Vaultwarden takes them
     until they expire, an hour after they were issued.
+  - With `SSO_ENABLED` and `SSO_ONLY`, the personal API key (`client_credentials` with a `user.`
+    client ID, as `bw login --apikey` sends it) is refused like the master password, with
+    `SSO sign-in is required`. Organization API keys keep working. Vaultwarden refuses only the
+    master password.
 - **Development routes.** Vaultwarden's debug builds serve static files from the source tree at
   `/vw_static/`; release builds do not, and neither does Kennword.
 - **Caches.** Do not cache Laravel's configuration or routes (see

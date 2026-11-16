@@ -642,6 +642,11 @@ final readonly class IdentityController
         if ($scope !== AuthMethod::UserApiKey->scope()) {
             throw ApiError::message('Scope not supported');
         }
+        // Kennword: SSO_ONLY refuses the personal API key like the master password, as it logs in
+        // without the provider too. Organization API keys only open the public API.
+        if ($this->config->bool('sso_enabled') && $this->config->bool('sso_only')) {
+            throw ApiError::message('SSO sign-in is required');
+        }
 
         // Like upstream, only the user API key logs in a device.
         $device = [];

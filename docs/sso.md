@@ -47,7 +47,7 @@ with the next request.
 | `SSO_SIGNUPS_ALLOWED` | `true` | New accounts at the first SSO login. `SIGNUPS_DOMAINS_WHITELIST`, if set, decides instead. |
 | `SSO_SIGNUPS_MATCH_EMAIL` | `true` | Links an existing account with a master password to the identity with the same address. |
 | `SSO_ALLOW_UNKNOWN_EMAIL_VERIFICATION` | `false` | Accepts tokens without `email_verified` for sign-ups and linking. |
-| `SSO_ONLY` | `false` | No more login with the master password; sessions started with it end at their next refresh. |
+| `SSO_ONLY` | `false` | No more login with the master password or the personal API key; sessions started with the master password end at their next refresh. Organization API keys keep working. |
 | `SSO_AUTH_ONLY_NOT_SESSION` | `false` | SSO only for the login: the clients get the server's own tokens (two hours, refreshed for 30 days, 90 on mobile), and the provider's session no longer counts. |
 | `SSO_AUDIENCE_TRUSTED` | | A regular expression for further audiences that ID tokens may name besides the client ID. |
 | `SSO_CLIENT_CACHE_EXPIRATION` | `0` | Seconds to keep the provider's discovery document and keys; `0` fetches them for every login. |
@@ -233,7 +233,8 @@ database's tools), since linking changes existing accounts.
    app comes back through `http://localhost:8065` to `8070` or `bitwarden://sso-callback`, the CLI
    through `http://localhost:8065`.
 6. **`SSO_ONLY`.** Only once every user can log in with SSO: logins with the master password are then
-   refused, and the sessions started with one end.
+   refused, and the sessions started with one end. Kennword also refuses the personal API key
+   (`bw login --apikey`); the CLI logs in with `bw login --sso` instead.
 
 ### Error messages
 
@@ -255,7 +256,7 @@ otherwise) has the details.
 | `Existing non SSO user with same email` | `SSO_SIGNUPS_MATCH_EMAIL=false` and an account with that address exists. |
 | `Existing SSO user with same email` | The account belongs to another identity at the provider, for example because the user was deleted and created again there. *Admin panel → Users → Delete SSO Association* lets the new identity link. |
 | `Signups are disabled. You will need an invitation` / `Email domain not allowed` | `SSO_SIGNUPS_ALLOWED=false` or `SIGNUPS_DOMAINS_WHITELIST`: invite the user in the admin panel. |
-| `SSO sign-in is required` | `SSO_ONLY=true` and a login with the master password. |
+| `SSO sign-in is required` | `SSO_ONLY=true` and a login with the master password or the personal API key. |
 
 ## How this is tested
 
