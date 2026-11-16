@@ -79,8 +79,10 @@ The `config:` items in [PARITY.md](../PARITY.md) show the state of each setting 
   `tcp://host:port`, on a loopback or other non-public address) for both sides. `ENABLE_WEBSOCKET=false`
   keeps the daemon from starting.
 - **Push notifications** (`PUSH_*`) go to Bitwarden's relay like Vaultwarden's. The relay's access token
-  is kept in Laravel's cache, shared by all PHP workers, for half of its lifetime. Notifications that
-  Vaultwarden sends in the background go out after the response.
+  is kept in Laravel's cache, shared by all PHP workers, for half of its lifetime. Every call to the
+  relay goes out after the response, each with a timeout of ten seconds, so a relay that does not answer
+  holds neither a login nor a request. Vaultwarden waits for device registrations and unregistrations
+  and fails the request when the relay refuses them; here such a failure is only logged.
 - **Rate limits** live in Laravel's cache (`storage/framework/cache`) instead of in memory, so all PHP
   workers share them. Vaultwarden keeps them per process.
 - **Icon downloads** stop after twice `ICON_DOWNLOAD_TIMEOUT` in all. Each request has

@@ -7,6 +7,7 @@ use App\Auth\Jwt;
 use App\Auth\LoginClaims;
 use App\Models\Device;
 use App\Models\User;
+use App\Support\Deferred;
 use App\Support\Push;
 use App\Support\Random;
 use Illuminate\Support\Facades\Log;
@@ -158,10 +159,13 @@ class PushTest extends TestCase
     public function test_a_relay_that_refuses_the_installation(): void
     {
         $this->changeVaultwardenEnvironment(['PUSH_INSTALLATION_KEY' => 'wrong']);
+        $log = Log::spy();
 
-        $this->putJson("/api/devices/identifier/{$this->phone->uuid}/token", ['pushToken' => 'fcm-token'], $this->auth)
-            ->assertStatus(400)->assertJsonPath('message', 'Unexpected push token received from bitwarden server: error decoding response body');
-        // Notifications only log the failure.
+        // The registration goes out after the response, so its failure is only logged.
+        $this->putJson("/api/devices/identifier/{$this->phone->uuid}/token", ['pushToken' => 'fcm-token'], $this->auth)->assertStatus(200);
+        $log->shouldHaveReceived('error')->withArgs(fn (string $message) => str_starts_with($message, 'Unable to register the device with the push relay: ') && str_contains($message, 'Unexpected push token received'));
+        // The device keeps the id it was registered under.
+        $this->assertNotNull(Device::findByUuid($this->phone->uuid)?->push_uuid);
         $this->postJson('/api/folders', ['name' => '2.folder'], $this->auth)->assertStatus(200);
     }
 
@@ -170,9 +174,26 @@ class PushTest extends TestCase
         // The identity server stays, the relay answers 404 below another path.
         $relay = 'https://'.self::$servicesHost.$this->relay;
         $this->changeVaultwardenEnvironment(['PUSH_RELAY_URI' => "{$relay}/elsewhere", 'PUSH_IDENTITY_URI' => "{$relay}/identity"]);
+        $log = Log::spy();
 
-        $this->putJson("/api/devices/identifier/{$this->phone->uuid}/clear-token", [])->assertStatus(400)->assertJsonPath('message',
-            "An error occurred during device unregistration: HTTP status client error (404 Not Found) for url ({$relay}/elsewhere/push/delete)");
+        $this->putJson("/api/devices/identifier/{$this->phone->uuid}/clear-token", [])->assertStatus(200);
+
+        $log->shouldHaveReceived('error')->withArgs(fn (string $message) => str_starts_with($message, 'Unable to unregister the device from the push relay: ')
+            && str_contains($message, 'An error occurred during device unregistration: HTTP status client error (404 Not Found)'));
+    }
+
+    public function test_the_relay_is_only_called_once_the_response_is_sent(): void
+    {
+        $this->phone->push_token = 'fcm-token';
+        $deferred = new Deferred;
+        $this->app->instance(Deferred::class, $deferred);
+
+        Push::registerDevice($this->phone);
+        $this->assertNotNull($this->phone->push_uuid);
+        $this->assertSame([], $this->recorded());
+
+        $deferred->run();
+        $this->assertSame(['/identity/connect/token', '/push/register'], array_column($this->recorded(), 'path'));
     }
 
     /**

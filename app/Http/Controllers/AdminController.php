@@ -417,11 +417,7 @@ final readonly class AdminController
 
         if ($this->config->bool('push_enabled')) {
             foreach (Device::findPushDevicesByUser($user->uuid) as $device) {
-                try {
-                    Push::unregisterDevice($device->push_uuid);
-                } catch (ApiError $error) {
-                    logger()->error("Unable to unregister devices from Bitwarden server: {$error->displayText()}");
-                }
+                Push::unregisterDevice($device->push_uuid);
             }
         }
 

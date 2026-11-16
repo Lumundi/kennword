@@ -16,8 +16,9 @@ use Symfony\Component\HttpFoundation\Response;
 
 /**
  * src/api/push.rs: mobile push notifications through Bitwarden's relay
- * (PUSH_ENABLED). Notifications Vaultwarden sends from a spawned task go
- * out once the response is sent.
+ * (PUSH_ENABLED). Every call to the relay goes out once the response is sent,
+ * so a relay that stalls cannot hold a worker that is answering a client.
+ * Vaultwarden awaits the cipher updates and the device registrations.
  */
 final class Push
 {
@@ -70,9 +71,10 @@ final class Push
     }
 
     /**
-     * register_push_device: only mobile devices with a push token.
-     *
-     * @throws ApiError
+     * register_push_device: only mobile devices with a push token. The
+     * registration with the relay goes out after the response, so a relay
+     * that does not answer cannot hold a login; a failure is only logged.
+     * Upstream awaits it and fails the request with the error.
      */
     public static function registerDevice(Device $device): void
     {
@@ -92,7 +94,16 @@ final class Push
         logger()->debug("Registering Device {$device->push_uuid}");
 
         // Generate a random push_uuid so if it doesn't already have one
-        $device->push_uuid ??= Random::uuid();
+        if ($device->push_uuid === null) {
+            $device->push_uuid = Random::uuid();
+            try {
+                $device->save();
+            } catch (ApiError $error) {
+                logger()->error("An error occurred while trying to save the (registered) device push uuid: {$error->displayText()}");
+
+                return;
+            }
+        }
 
         $data = Json::sorted([
             'deviceId' => $device->push_uuid,
@@ -103,43 +114,44 @@ final class Push
             'installationId' => $config->string('push_installation_id'),
         ]);
 
-        $token = self::authApiToken();
-        $url = $config->string('push_relay_uri').'/push/register';
-        try {
-            [$status] = self::request('POST', $url, [
-                'Content-Type' => 'application/json',
-                'Accept' => 'application/json',
-                'Authorization' => "Bearer {$token}",
-            ], Json::encode($data));
-        } catch (RuntimeException $error) {
-            throw ApiError::message('Req', logMessage: $error->getMessage());
-        }
-        if ($status >= 400) {
-            throw ApiError::message('An error occurred while proceeding registration of a device: '.self::statusError($status, $url));
-        }
-
-        try {
-            $device->save();
-        } catch (ApiError $error) {
-            throw ApiError::message("An error occurred while trying to save the (registered) device push uuid: {$error->displayText()}");
-        }
+        app(Deferred::class)->add(static function () use ($data): void {
+            try {
+                self::post('/push/register', $data, 'An error occurred while proceeding registration of a device');
+            } catch (ApiError $error) {
+                logger()->error("Unable to register the device with the push relay: {$error->displayText()}");
+            }
+        });
     }
 
     /**
-     * unregister_push_device
-     *
-     * @throws ApiError
+     * unregister_push_device: after the response, failures are logged.
      */
     public static function unregisterDevice(?string $pushUuid): void
     {
-        $config = app(Config::class);
-        if (! $config->bool('push_enabled') || $pushUuid === null) {
+        if (! app(Config::class)->bool('push_enabled') || $pushUuid === null) {
             return;
         }
-        $data = ['id' => $pushUuid];
 
+        app(Deferred::class)->add(static function () use ($pushUuid): void {
+            try {
+                self::post('/push/delete', ['id' => $pushUuid], 'An error occurred during device unregistration');
+            } catch (ApiError $error) {
+                logger()->error("Unable to unregister the device from the push relay: {$error->displayText()}");
+            }
+        });
+    }
+
+    /**
+     * An authorized POST to the relay.
+     *
+     * @param  array<string, mixed>  $data
+     *
+     * @throws ApiError
+     */
+    private static function post(string $path, array $data, string $failure): void
+    {
         $token = self::authApiToken();
-        $url = $config->string('push_relay_uri').'/push/delete';
+        $url = app(Config::class)->string('push_relay_uri').$path;
         try {
             [$status] = self::request('POST', $url, [
                 'Content-Type' => 'application/json',
@@ -150,7 +162,7 @@ final class Push
             throw ApiError::message('Req', logMessage: $error->getMessage());
         }
         if ($status >= 400) {
-            throw ApiError::message('An error occurred during device unregistration: '.self::statusError($status, $url));
+            throw ApiError::message("{$failure}: ".self::statusError($status, $url));
         }
     }
 
@@ -169,7 +181,7 @@ final class Push
         }
 
         if (Device::checkUserHasPushDevice($cipher->user_uuid)) {
-            self::sendToPushRelay([
+            self::spawn([
                 'userId' => $cipher->user_uuid,
                 'organizationId' => null,
                 'deviceId' => $device->push_uuid,
