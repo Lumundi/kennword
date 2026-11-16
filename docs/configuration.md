@@ -67,7 +67,9 @@ The `config:` items in [PARITY.md](../PARITY.md) show the state of each setting 
   Vaultwarden does, but only the first level counts. The lines look like Vaultwarden's
   (`EXTENDED_LOGGING`, `LOG_TIMESTAMP_FORMAT`), with `kennword` where Vaultwarden names its Rust
   module. `LOG_FILE` adds a file and `USE_SYSLOG` the syslog (as `vaultwarden`, facility user), as in
-  Vaultwarden; a file is not reopened on `SIGHUP`, which PHP does not need.
+  Vaultwarden; a file is not reopened on `SIGHUP`, which PHP does not need. Requests themselves are
+  not logged: the web server's access log takes the place of Vaultwarden's line for each request, and
+  should leave out the values of the query as Vaultwarden does ([Installation](installation.md#access-log)).
 - **Scheduled jobs** run in a process of their own (`php artisan kennword:schedule`) or from cron
   (`--once`), not inside the web server ([Installation](installation.md#scheduled-jobs)).
   `JOB_POLL_INTERVAL_MS` sets how often the process checks; with cron, cron decides, but `0` still

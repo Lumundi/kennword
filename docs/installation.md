@@ -302,6 +302,32 @@ The `.htaccess` also passes the `Authorization` header on to PHP, which the clie
 If another proxy sits in front, set `IP_HEADER` and `IP_HEADER_TRUSTED_PROXIES` as for Vaultwarden, so
 that the rate limits and logs see the client's address.
 
+### Access log
+
+Kennword does not log requests itself; the web server's access log does. Vaultwarden's own request log
+leaves out the values of the query (since
+[dani-garcia/vaultwarden#7929](https://github.com/dani-garcia/vaultwarden/pull/7929), after 1.37.5),
+because they can hold secrets: the access code of a login with another device, the token of an
+attachment download, the code of an SSO login, or the access token a client sends to
+`/notifications/hub`. The access logs of nginx and Apache keep the query. To log the path alone,
+define a format in nginx's `http` block:
+
+```nginx
+map $request_uri $request_path {
+    ~^(?<path>[^?]*) $path;
+}
+log_format kennword '$remote_addr - $remote_user [$time_local] "$request_method $request_path $server_protocol" '
+                    '$status $body_bytes_sent "$http_referer" "$http_user_agent"';
+```
+
+and use it in the `server` block with `access_log /var/log/nginx/kennword.log kennword;`. With Apache,
+inside the `VirtualHost`:
+
+```apache
+LogFormat "%h %l %u %t \"%m %U %H\" %>s %b \"%{Referer}i\" \"%{User-Agent}i\"" kennword
+CustomLog /var/log/apache2/kennword.log kennword
+```
+
 ## Things not to do
 
 - Do not run `php artisan optimize`, `config:cache` or `route:cache`. With a cached configuration
