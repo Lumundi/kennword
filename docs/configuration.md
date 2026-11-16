@@ -85,6 +85,10 @@ The `config:` items in [PARITY.md](../PARITY.md) show the state of each setting 
   and fails the request when the relay refuses them; here such a failure is only logged.
 - **Rate limits** live in Laravel's cache (`storage/framework/cache`) instead of in memory, so all PHP
   workers share them. Vaultwarden keeps them per process.
+- **SMTP timeout.** `SMTP_TIMEOUT` is how long one wait for the server may take (connecting, a reply, a
+  write). Sending one mail, from connecting to the end of the conversation, may take four times that
+  in all (60 seconds with the default of 15); a server that answers a few bytes at a time would otherwise
+  hold the PHP worker for as long as it liked. The mail then fails with a timeout error.
 - **Icon downloads** stop after twice `ICON_DOWNLOAD_TIMEOUT` in all. Each request has
   `ICON_DOWNLOAD_TIMEOUT`, as in Vaultwarden, so an icon that does not answer still gives way to the next;
   but the page and every icon tried also share that deadline. A PHP worker waits for the download, and a

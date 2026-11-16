@@ -11,16 +11,25 @@ use Symfony\Component\Mailer\Transport\Smtp\Auth\LoginAuthenticator;
 use Symfony\Component\Mailer\Transport\Smtp\Auth\PlainAuthenticator;
 use Symfony\Component\Mailer\Transport\Smtp\Auth\XOAuth2Authenticator;
 use Symfony\Component\Mailer\Transport\Smtp\EsmtpTransport;
-use Symfony\Component\Mailer\Transport\Smtp\Stream\SocketStream;
 use Symfony\Component\Mime\Message;
 
 /**
  * mail::smtp_transport, configured like lettre: SMTP_SECURITY off (no TLS
  * at all), starttls (required) or force_tls (implicit TLS), and the PLAIN
  * and LOGIN mechanisms unless SMTP_AUTH_MECHANISM names others.
+ *
+ * SMTP_TIMEOUT is how long one wait for the server may take; lettre's is the
+ * same. Sending one mail, from connecting to quitting, may take
+ * TOTAL_TIMEOUTS times as long (see DeadlineStream), so that a server which
+ * answers a little at a time cannot hold the PHP worker.
  */
 final readonly class SmtpTransport implements Transport
 {
+    /**
+     * How many times SMTP_TIMEOUT the whole sending of a mail may take.
+     */
+    public const int TOTAL_TIMEOUTS = 4;
+
     public function __construct(
         private Config $config,
     ) {}
@@ -47,22 +56,20 @@ final readonly class SmtpTransport implements Transport
         $host = $this->config->optionalString('smtp_host') ?? throw ApiError::message('SMTP error: no SMTP_HOST');
         $security = $this->config->string('smtp_security');
 
-        $transport = new EsmtpTransport($host, $this->config->int('smtp_port'), $security === 'force_tls');
+        $timeout = (float) max(1, $this->config->int('smtp_timeout'));
+        $stream = new DeadlineStream($timeout, $timeout * self::TOTAL_TIMEOUTS);
+        $transport = new EsmtpTransport($host, $this->config->int('smtp_port'), $security === 'force_tls', stream: $stream);
         if ($security === 'off') {
             $transport->setAutoTls(false);
         } elseif ($security === 'starttls') {
             $transport->setRequireTls(true);
         }
 
-        $stream = $transport->getStream();
-        if ($stream instanceof SocketStream) {
-            $stream->setTimeout($this->config->int('smtp_timeout'));
-            $stream->setStreamOptions(['ssl' => [
-                'verify_peer' => ! $this->config->bool('smtp_accept_invalid_certs'),
-                'allow_self_signed' => $this->config->bool('smtp_accept_invalid_certs'),
-                'verify_peer_name' => ! $this->config->bool('smtp_accept_invalid_hostnames'),
-            ]]);
-        }
+        $stream->setStreamOptions(['ssl' => [
+            'verify_peer' => ! $this->config->bool('smtp_accept_invalid_certs'),
+            'allow_self_signed' => $this->config->bool('smtp_accept_invalid_certs'),
+            'verify_peer_name' => ! $this->config->bool('smtp_accept_invalid_hostnames'),
+        ]]);
 
         $username = $this->config->optionalString('smtp_username');
         $password = $this->config->optionalString('smtp_password');
