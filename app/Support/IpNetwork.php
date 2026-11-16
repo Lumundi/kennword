@@ -7,6 +7,16 @@ namespace App\Support;
  */
 final readonly class IpNetwork
 {
+    /**
+     * Where a reverse proxy in front of us can run: loopback, the private
+     * networks of RFC 1918 and RFC 4193, link-local addresses and the shared
+     * address space of carrier-grade NAT and overlay networks (RFC 6598).
+     */
+    public const array LOCAL_PROXY_RANGES = [
+        '127.0.0.0/8', '10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16', '169.254.0.0/16', '100.64.0.0/10',
+        '::1/128', 'fc00::/7', 'fe80::/10',
+    ];
+
     private function __construct(
         public string $address,
         public int $prefix,
@@ -65,6 +75,24 @@ final readonly class IpNetwork
         );
 
         return strlen($binary) === 4 ? self::isGlobalV4($numbers) : self::isGlobalV6($numbers);
+    }
+
+    /**
+     * Whether the address is in LOCAL_PROXY_RANGES. Narrower than not
+     * isGlobal(), which is meant for outgoing requests: tunnel and translation
+     * prefixes such as 6to4 (2002::/16), Teredo (2001::/32) or the local-use
+     * NAT64 prefix (64:ff9b:1::/48) are not global either, but clients from
+     * anywhere can connect from them.
+     */
+    public static function isLocalProxy(string $ip): bool
+    {
+        foreach (self::LOCAL_PROXY_RANGES as $range) {
+            if (self::parse($range)?->contains($ip)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

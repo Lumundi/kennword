@@ -62,7 +62,11 @@ final class ClientIp
     }
 
     /**
-     * ip_header_is_trusted: "all", "local" (any non-global address) or a list of addresses and ranges.
+     * ip_header_is_trusted: "all", "local" or a list of addresses and ranges.
+     * Vaultwarden takes "local" as any non-global address; here it is only
+     * where a proxy can run (IpNetwork::LOCAL_PROXY_RANGES), since the web
+     * server in front of PHP is often the only one and passes the client's
+     * own header on.
      */
     public static function isTrusted(?string $remote, Config $config): bool
     {
@@ -77,7 +81,7 @@ final class ClientIp
         // IPv4 clients of a dual stack listener arrive as IPv4-mapped IPv6 addresses.
         $remote = IpNetwork::toCanonical($remote);
         if (strcasecmp($trusted, 'local') === 0) {
-            return ! IpNetwork::isGlobal($remote);
+            return IpNetwork::isLocalProxy($remote);
         }
 
         foreach (explode(',', $trusted) as $entry) {

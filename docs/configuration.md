@@ -177,6 +177,16 @@ The `config:` items in [PARITY.md](../PARITY.md) show the state of each setting 
     only when the request says it came over HTTPS (that header, or TLS of its own).
   - Every response carries `Vary: Origin`: the CORS headers depend on the origin of the request, and
     caches must not hand the answer for one origin to another.
+  - `IP_HEADER_TRUSTED_PROXIES=local`, the default, accepts the client IP header only from addresses
+    where a proxy in front of Kennword can run: loopback (`127.0.0.0/8`, `::1`), the private networks
+    (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `fc00::/7`), link-local addresses
+    (`169.254.0.0/16`, `fe80::/10`) and the shared address space of carrier-grade NAT and overlay
+    networks such as Tailscale (`100.64.0.0/10`). Vaultwarden accepts it from every address that is not
+    globally reachable, which also takes in prefixes that clients anywhere connect from, such as 6to4
+    (`2002::/16`), Teredo (`2001::/32`) and local-use NAT64 (`64:ff9b:1::/48`). Vaultwarden expects a
+    reverse proxy in front that sets the header itself; in front of Kennword the web server is often the
+    only one and passes the client's own header on to PHP. A proxy at another address that is not global
+    (in the benchmarking range `198.18.0.0/15`, for example) must be listed.
 - **Development routes.** Vaultwarden's debug builds serve static files from the source tree at
   `/vw_static/`; release builds do not, and neither does Kennword.
 - **Caches.** Do not cache Laravel's configuration or routes (see

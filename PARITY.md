@@ -378,7 +378,7 @@ Status: ✅ done (needs a test) · 🟨 partial · ⬜ todo · ➖ won't fix
 | ✅ | `CLIENT_SUPPRESS_ONBOARDING` | src/config.rs:683 | 2 | Read, defaulted and validated like Vaultwarden (App\Config) and applied like it; tested in tests/Feature/Api/AccountManagementTest. |
 | ✅ | `IP_HEADER` | src/config.rs:690 | 2 | Read like Vaultwarden and used: DOMAIN for mount path, origin, CORS, Host and token issuers; the IP settings for the client IP; the CSP sources in the security headers. |
 | ✅ | `_IP_HEADER_ENABLED` | src/config.rs:692 | 2 | Read like Vaultwarden and used: DOMAIN for mount path, origin, CORS, Host and token issuers; the IP settings for the client IP; the CSP sources in the security headers. |
-| ✅ | `IP_HEADER_TRUSTED_PROXIES` | src/config.rs:699 | 2 | Read like Vaultwarden and used: DOMAIN for mount path, origin, CORS, Host and token issuers; the IP settings for the client IP; the CSP sources in the security headers. |
+| ✅ | `IP_HEADER_TRUSTED_PROXIES` | src/config.rs:699 | 2 | Agreed deviation: "local" covers loopback, private and link-local addresses and the shared address space only, not every non-global address (docs/configuration.md, Stricter checks). Tested in tests/Unit/Auth/ClientIpTest. |
 | ✅ | `ICON_SERVICE` | src/config.rs:706 | 3 | Mounts icon_internal or icon_external like icons::routes(). |
 | ✅ | `_ICON_SERVICE_URL` | src/config.rs:708 | 3 | The redirect target of icon_external. |
 | ✅ | `_ICON_SERVICE_CSP` | src/config.rs:710 | 2 | In the CSP of AppHeaders; compared on the SSO pair, which has a custom ICON_SERVICE. |
@@ -461,7 +461,7 @@ Status: ✅ done (needs a test) · 🟨 partial · ⬜ todo · ➖ won't fix
 | 🟨 | `SMTP_USERNAME` | src/config.rs:921 | 1 | Ported in App\Mail (SmtpTransport, SendmailTransport) like lettre; not compared with Vaultwarden, whose error texts come from lettre. |
 | 🟨 | `SMTP_PASSWORD` | src/config.rs:923 | 1 | Ported in App\Mail (SmtpTransport, SendmailTransport) like lettre; not compared with Vaultwarden, whose error texts come from lettre. |
 | 🟨 | `SMTP_AUTH_MECHANISM` | src/config.rs:925 | 1 | Ported in App\Mail (SmtpTransport, SendmailTransport) like lettre; not compared with Vaultwarden, whose error texts come from lettre. |
-| ✅ | `SMTP_TIMEOUT` | src/config.rs:927 | 2 | Used by App\Mail\SmtpTransport; compared with Vaultwarden in tests/Differential/MailTest, which sends through SMTP sinks. |
+| ✅ | `SMTP_TIMEOUT` | src/config.rs:927 | 3 | Used by App\Mail\SmtpTransport; compared with Vaultwarden in tests/Differential/MailTest, which sends through SMTP sinks. |
 | 🟨 | `HELO_NAME` | src/config.rs:929 | 1 | Ported in App\Mail (SmtpTransport, SendmailTransport) like lettre; not compared with Vaultwarden, whose error texts come from lettre. |
 | ✅ | `SMTP_EMBED_IMAGES` | src/config.rs:931 | 2 | tests/Feature/Mail/MailTest: the images inline with their content ids, as lettre embeds them. |
 | ✅ | `_SMTP_IMG_SRC` | src/config.rs:933 | 2 | tests/Feature/Mail/MailTest. |

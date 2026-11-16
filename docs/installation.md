@@ -300,7 +300,9 @@ The `.htaccess` also passes the `Authorization` header on to PHP, which the clie
 ### Behind a reverse proxy
 
 If another proxy sits in front, set `IP_HEADER` and `IP_HEADER_TRUSTED_PROXIES` as for Vaultwarden, so
-that the rate limits and logs see the client's address.
+that the rate limits and logs see the client's address. The default, `local`, covers a proxy on the same
+host or in a private network; one at any other address must be listed
+([Configuration](configuration.md#differences-from-vaultwarden)).
 
 ### Access log
 

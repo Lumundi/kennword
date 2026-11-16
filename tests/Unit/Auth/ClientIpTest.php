@@ -73,6 +73,34 @@ class ClientIpTest extends TestCase
         yield 'all proxies' => [['IP_HEADER_TRUSTED_PROXIES' => 'all'], '203.0.113.1', ['X-Real-IP' => '203.0.113.9'], '203.0.113.9'];
         yield 'mapped local address' => [[], '::ffff:10.1.2.3', ['X-Real-IP' => '203.0.113.9'], '203.0.113.9'];
         yield 'forwarded chain' => [['IP_HEADER' => 'X-Forwarded-For'], '10.0.0.1', ['X-Forwarded-For' => '203.0.113.9, 10.0.0.5'], '203.0.113.9'];
+        yield 'unique local proxy' => [[], 'fd00::5', ['X-Real-IP' => '203.0.113.9'], '203.0.113.9'];
+        yield 'shared address space proxy' => [[], '100.64.0.5', ['X-Real-IP' => '203.0.113.9'], '203.0.113.9'];
+        // Not global, but clients from anywhere connect from them (6to4, Teredo, local-use NAT64).
+        yield '6to4 client' => [[], '2002:cb00:7105::1', ['X-Real-IP' => '198.51.100.7'], '2002:cb00:7105::1'];
+        yield 'teredo client' => [[], '2001:0:4136:e378:8000:63bf:3fff:fdd2', ['X-Real-IP' => '198.51.100.7'], '2001:0:4136:e378:8000:63bf:3fff:fdd2'];
+        yield 'nat64 client' => [[], '64:ff9b:1::cb00:7105', ['X-Real-IP' => '198.51.100.7'], '64:ff9b:1::cb00:7105'];
+        yield '6to4 entry in a chain' => [['IP_HEADER' => 'X-Forwarded-For'], '10.0.0.1', ['X-Forwarded-For' => '198.51.100.7, 2002:cb00:7105::1'], '2002:cb00:7105::1'];
+        yield 'listed 6to4 proxy' => [['IP_HEADER_TRUSTED_PROXIES' => '2002:cb00:7105::/48'], '2002:cb00:7105::1', ['X-Real-IP' => '203.0.113.9'], '203.0.113.9'];
+    }
+
+    /**
+     * @return iterable<string, array{string, bool}>
+     */
+    public static function proxyAddresses(): iterable
+    {
+        foreach (['127.0.0.1', '10.1.2.3', '172.17.0.2', '192.168.1.1', '169.254.1.1', '100.64.0.1', '::1', 'fd00::1', 'fe80::1'] as $ip) {
+            yield $ip => [$ip, true];
+        }
+        foreach (['2002:cb00:7105::1', '2001:0:4136:e378:8000:63bf:3fff:fdd2', '64:ff9b:1::cb00:7105', '198.18.0.1', '192.0.2.1',
+            '240.0.0.1', '0.0.0.0', '::', '203.0.113.5', '8.8.8.8', '2606:4700::1111', '172.32.0.1', '100.128.0.1'] as $ip) {
+            yield $ip => [$ip, false];
+        }
+    }
+
+    #[DataProvider('proxyAddresses')]
+    public function test_local_proxy(string $ip, bool $local): void
+    {
+        $this->assertSame($local, IpNetwork::isLocalProxy($ip));
     }
 
     /**
