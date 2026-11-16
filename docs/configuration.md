@@ -151,6 +151,17 @@ The `config:` items in [PARITY.md](../PARITY.md) show the state of each setting 
     client ID, as `bw login --apikey` sends it) is refused like the master password, with
     `SSO sign-in is required`. Organization API keys keep working. Vaultwarden refuses only the
     master password.
+  - Failed checks count per account, from whatever address they come: the master password hash
+    (the password login, `/api/two-factor/send-email-login` and every route that takes the hash or a
+    mailed code as proof) and the codes typed at a two-factor login (authenticator app, email,
+    YubiKey, recovery code). After 10 failures within 15 minutes, the account answers 429
+    (`Too many failed attempts. Try again later.`) to all of them, the right password included, until
+    the oldest failure is 15 minutes old. Nothing locks an account for good, and a successful check
+    does not clear the failures. A login for an address without an account counts against that
+    address, so the answer does not tell which addresses have one. The counts live in Laravel's cache
+    like the rate limits. Someone who knows an address can hold its account back this way for as
+    long as they keep failing; the limits per address still apply to them. Vaultwarden limits per
+    address only.
 - **Development routes.** Vaultwarden's debug builds serve static files from the source tree at
   `/vw_static/`; release builds do not, and neither does Kennword.
 - **Caches.** Do not cache Laravel's configuration or routes (see

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Auth\AccountBackoff;
 use App\Auth\AuthMethod;
 use App\Auth\AuthTokens;
 use App\Auth\ClientIp;
@@ -66,6 +67,7 @@ final readonly class IdentityController
         private Jwt $jwt,
         private RateLimiter $limiter,
         private AccountsController $accounts,
+        private AccountBackoff $backoff,
     ) {}
 
     /**
@@ -383,8 +385,12 @@ final readonly class IdentityController
 
         $username = trim($username);
         $logUsername = EscapeDebug::of($username);
-        $user = User::findByMail($username)
-            ?? throw ApiError::message('Username or password is incorrect. Try again', logMessage: "IP: {$ip}. Username: {$logUsername}.");
+        $user = User::findByMail($username);
+        if ($user === null) {
+            $this->backoff->failUnknown($username);
+
+            throw ApiError::message('Username or password is incorrect. Try again', logMessage: "IP: {$ip}. Username: {$logUsername}.");
+        }
         $userId = $user->uuid;
 
         $failed = "IP: {$ip}. Username: {$logUsername}.";
@@ -397,7 +403,7 @@ final readonly class IdentityController
                 || $ip !== $request->request_ip || ! $request->checkAccessCode($password)) {
                 throw ApiError::message('Username or access code is incorrect. Try again', logMessage: $failed, event: Event::USER_FAILED_LOG_IN);
             }
-        } elseif (! $user->checkValidPassword($password)) {
+        } elseif (! $this->backoff->checkPassword($user, $password)) {
             throw ApiError::message('Username or password is incorrect. Try again', logMessage: $failed, event: Event::USER_FAILED_LOG_IN);
         }
         if (! $user->enabled) {
@@ -793,16 +799,29 @@ final readonly class IdentityController
         $method = $methods->first(static fn (TwoFactor $method): bool => $method->atype === $selected && $method->enabled);
         $methodData = static fn (): string => ($method ?? throw ApiError::message("Two factor doesn't exist"))->data;
 
-        match ($selected) {
-            TwoFactor::TYPE_AUTHENTICATOR => AuthenticatorController::validateTotpCodeStr($user->uuid, $code, $methodData(), $ip),
-            TwoFactor::TYPE_WEBAUTHN => WebauthnController::validateWebauthnLogin($user->uuid, $code),
-            TwoFactor::TYPE_YUBIKEY => YubikeyController::validateYubikeyLogin($code, $methodData()),
-            TwoFactor::TYPE_DUO => DuoOidc::validateLogin($user->email, $code, $clientId, $device->uuid),
-            TwoFactor::TYPE_EMAIL => EmailController::validateEmailCodeStr($user->uuid, $code, $methodData(), $ip),
-            TwoFactor::TYPE_REMEMBER => $this->checkRemembered($user, $device, $code, $providers, $clientId),
-            TwoFactor::TYPE_RECOVERY_CODE => $this->recoverTwofactor($user, $device, $code, $ip),
-            default => throw ApiError::message('Invalid two factor provider', event: Event::USER_FAILED_LOG_IN_2FA),
+        $validate = function () use ($selected, $user, $device, $code, $methodData, $providers, $clientId, $ip): void {
+            match ($selected) {
+                TwoFactor::TYPE_AUTHENTICATOR => AuthenticatorController::validateTotpCodeStr($user->uuid, $code, $methodData(), $ip),
+                TwoFactor::TYPE_WEBAUTHN => WebauthnController::validateWebauthnLogin($user->uuid, $code),
+                TwoFactor::TYPE_YUBIKEY => YubikeyController::validateYubikeyLogin($code, $methodData()),
+                TwoFactor::TYPE_DUO => DuoOidc::validateLogin($user->email, $code, $clientId, $device->uuid),
+                TwoFactor::TYPE_EMAIL => EmailController::validateEmailCodeStr($user->uuid, $code, $methodData(), $ip),
+                TwoFactor::TYPE_REMEMBER => $this->checkRemembered($user, $device, $code, $providers, $clientId),
+                TwoFactor::TYPE_RECOVERY_CODE => $this->recoverTwofactor($user, $device, $code, $ip),
+                default => throw ApiError::message('Invalid two factor provider', event: Event::USER_FAILED_LOG_IN_2FA),
+            };
         };
+        // Kennword: the codes a user types count towards the account's backoff. WebAuthn and Duo
+        // answer a challenge of their own, and the remember token is no code to guess.
+        if (in_array($selected, [TwoFactor::TYPE_AUTHENTICATOR, TwoFactor::TYPE_YUBIKEY, TwoFactor::TYPE_EMAIL, TwoFactor::TYPE_RECOVERY_CODE], true)) {
+            $this->backoff->attempt($user->uuid, static function () use ($validate): bool {
+                $validate();
+
+                return true;
+            });
+        } else {
+            $validate();
+        }
 
         TwoFactorIncomplete::markComplete($user->uuid, $device->uuid);
 

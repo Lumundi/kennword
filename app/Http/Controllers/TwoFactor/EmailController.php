@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\TwoFactor;
 
+use App\Auth\AccountBackoff;
 use App\Auth\ClientIp;
 use App\Auth\Headers;
 use App\Auth\TwoFactorTokens;
@@ -37,6 +38,7 @@ final readonly class EmailController
     public function __construct(
         private Config $config,
         private RateLimiter $limiter,
+        private AccountBackoff $backoff,
     ) {}
 
     /**
@@ -66,11 +68,18 @@ final readonly class EmailController
 
         if ($email !== null) {
             $logged = EscapeDebug::of($email);
-            $user = User::findByMail($email)
-                ?? throw ApiError::message('Username or password is incorrect. Try again', logMessage: "IP: {$ip}. Username: {$logged}.");
+            $user = User::findByMail($email);
+            if ($user === null) {
+                // Counted like a wrong password (Kennword), so that the backoff does not tell which addresses have an account.
+                if ($masterPasswordHash !== null) {
+                    $this->backoff->failUnknown($email);
+                }
+
+                throw ApiError::message('Username or password is incorrect. Try again', logMessage: "IP: {$ip}. Username: {$logged}.");
+            }
 
             if ($masterPasswordHash !== null) {
-                if (! $user->checkValidPassword($masterPasswordHash)) {
+                if (! $this->backoff->checkPassword($user, $masterPasswordHash)) {
                     throw ApiError::message('Username or password is incorrect. Try again', logMessage: "IP: {$ip}. Username: {$logged}.");
                 }
             } elseif ($authRequestId !== null) {

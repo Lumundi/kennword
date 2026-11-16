@@ -2,6 +2,7 @@
 
 namespace App\Http\Data;
 
+use App\Auth\AccountBackoff;
 use App\Config\Config;
 use App\Http\ApiError;
 use App\Http\HttpStatus;
@@ -33,16 +34,21 @@ final readonly class PasswordOrOtpData
     }
 
     /**
+     * Both count towards the account's backoff (Kennword).
+     *
      * @param  bool  $deleteIfValid  Whether the code is used up; some callers need it twice
      *
      * @throws ApiError
      */
     public function validate(User $user, bool $deleteIfValid, Config $config): void
     {
+        $backoff = app(AccountBackoff::class);
+        [$passwordHash, $otp] = [$this->masterPasswordHash, $this->otp];
         match (true) {
-            $this->masterPasswordHash !== null && $this->otp === null => $user->checkValidPassword($this->masterPasswordHash)
+            $passwordHash !== null && $otp === null => $backoff->checkPassword($user, $passwordHash)
                 ?: throw ApiError::message('Invalid password'),
-            $this->masterPasswordHash === null && $this->otp !== null => self::validateProtectedActionOtp($this->otp, $user->uuid, $deleteIfValid, $config),
+            $passwordHash === null && $otp !== null => $backoff->attempt($user->uuid,
+                static fn (): bool => self::validateProtectedActionOtp($otp, $user->uuid, $deleteIfValid, $config)),
             default => throw ApiError::message('No validation provided'),
         };
     }

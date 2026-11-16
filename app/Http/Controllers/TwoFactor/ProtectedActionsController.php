@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\TwoFactor;
 
+use App\Auth\AccountBackoff;
 use App\Auth\Headers;
 use App\Config\Config;
 use App\Http\ApiError;
@@ -24,6 +25,7 @@ final readonly class ProtectedActionsController
 
     public function __construct(
         private Config $config,
+        private AccountBackoff $backoff,
     ) {}
 
     /**
@@ -63,7 +65,9 @@ final readonly class ProtectedActionsController
             throw ApiError::message(self::MAIL_DISABLED);
         }
 
-        PasswordOrOtpData::validateProtectedActionOtp($otp, $headers->user->uuid, true, $this->config);
+        // Counts towards the account's backoff (Kennword).
+        $this->backoff->attempt($headers->user->uuid,
+            fn (): bool => PasswordOrOtpData::validateProtectedActionOtp($otp, $headers->user->uuid, true, $this->config));
 
         return new EmptyResponse;
     }

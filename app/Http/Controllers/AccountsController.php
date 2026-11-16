@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Auth\AccountBackoff;
 use App\Auth\ClientIp;
 use App\Auth\Headers;
 use App\Auth\Jwt;
@@ -84,6 +85,7 @@ final readonly class AccountsController
         private RsaKeys $keys,
         private RateLimiter $limiter,
         private Notify $nt,
+        private AccountBackoff $backoff,
     ) {}
 
     /**
@@ -550,7 +552,7 @@ final readonly class AccountsController
         $key = $body->optionalString('key');
         $user = $headers->user;
 
-        if (! $user->checkValidPassword($passwordHash)) {
+        if (! $this->backoff->checkPassword($user, $passwordHash)) {
             throw ApiError::message('Invalid password');
         }
         Event::logUser(Event::USER_CHANGED_PASSWORD, $user->uuid, $headers->device->atype, $headers->ip);
@@ -592,7 +594,7 @@ final readonly class AccountsController
         $passwordHash = $body->string('masterPasswordHash');
         $user = $headers->user;
 
-        if (! $user->checkValidPassword($passwordHash)) {
+        if (! $this->backoff->checkPassword($user, $passwordHash)) {
             throw ApiError::message('Invalid password');
         }
         $authentication->check($user, $unlock);
@@ -642,7 +644,7 @@ final readonly class AccountsController
         $newUserKeyId = $body->optionalString('newUserKeyId');
         $user = $headers->user;
 
-        if (! $user->checkValidPassword($oldHash)) {
+        if (! $this->backoff->checkPassword($user, $oldHash)) {
             throw ApiError::message('Invalid password');
         }
         // Nothing is changed when one cipher is invalid.
@@ -773,7 +775,7 @@ final readonly class AccountsController
         $newEmail = $body->string('newEmail');
         $user = $headers->user;
 
-        if (! $user->checkValidPassword($passwordHash)) {
+        if (! $this->backoff->checkPassword($user, $passwordHash)) {
             throw ApiError::message('Invalid password');
         }
 
@@ -827,7 +829,7 @@ final readonly class AccountsController
         $token = NumberOrString::optional($body, 'token') ?? throw new HttpStatus(422, 'Missing field `token`.');
         $user = $headers->user;
 
-        if (! $user->checkValidPassword($passwordHash)) {
+        if (! $this->backoff->checkPassword($user, $passwordHash)) {
             throw ApiError::message('Invalid password');
         }
         if (User::findByMail($newEmail) !== null) {
@@ -1025,7 +1027,7 @@ final readonly class AccountsController
     {
         $passwordHash = Body::json($request)->string('masterPasswordHash');
         $user = $headers->user;
-        if (! $user->checkValidPassword($passwordHash)) {
+        if (! $this->backoff->checkPassword($user, $passwordHash)) {
             throw ApiError::message('Invalid password');
         }
         $this->kdfUpgrade($user, $passwordHash);
