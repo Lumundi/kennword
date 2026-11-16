@@ -143,6 +143,10 @@ The `config:` items in [PARITY.md](../PARITY.md) show the state of each setting 
     session ended with a logout, a password change or a deleted device or account opens no connection.
     An open connection is closed once its token expires, and the clients connect again with a new one.
     Vaultwarden checks the token's signature and expiry when the connection opens, and keeps it open.
+  - Rotating an organization's API key ends the access tokens the old key got for the public API.
+    The public API refuses a token issued before the key's last rotation (`revision_date`), to the
+    second, so a token issued in the second of the rotation still works. Vaultwarden takes them
+    until they expire, an hour after they were issued.
 - **Development routes.** Vaultwarden's debug builds serve static files from the source tree at
   `/vw_static/`; release builds do not, and neither does Kennword.
 - **Caches.** Do not cache Laravel's configuration or routes (see

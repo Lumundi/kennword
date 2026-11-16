@@ -63,6 +63,12 @@ final readonly class PublicToken
         if ($apiKey->uuid !== $sub) {
             throw new Unauthorized('Token not issued for this client');
         }
+        // Kennword: rotating the key ends the tokens it gave out. Rotation keeps the key's id and
+        // sets its revision date; the token knows its issue time to the second only, so one issued
+        // in the second of the rotation, before it, still passes.
+        if ($nbf < $apiKey->revision_date->getTimestamp()) {
+            throw new Unauthorized('Token issued before the API key was rotated');
+        }
 
         return new self($clientSub);
     }

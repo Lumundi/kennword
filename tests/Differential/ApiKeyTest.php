@@ -97,9 +97,13 @@ class ApiKeyTest extends DifferentialTestCase
         $steps['members after the overwrite'] = $server->send('GET', "/api/organizations/{$org}/users", $owner);
         $steps['member profile'] = $server->send('GET', '/api/accounts/profile', $member);
 
-        $server->json('POST', "/api/organizations/{$org}/rotate-api-key", ['masterPasswordHash' => 'client-hash'], $owner);
-        $steps['import after rotating'] = $server->json('POST', '/api/public/organization/import', $import([]), $public);
+        $rotated = $server->json('POST', "/api/organizations/{$org}/rotate-api-key", ['masterPasswordHash' => 'client-hash'], $owner)->jsonString('apiKey');
+        // The old key's token is left out: Kennword refuses it after the rotation, Vaultwarden takes it until
+        // it expires (docs/configuration.md). The new key's token works on both.
         $steps['login with the old secret'] = $server->form('/identity/connect/token', $login);
+        $steps['login with the new secret'] = $renewed = $server->form('/identity/connect/token', [...$login, 'client_secret' => $rotated]);
+        $steps['import with the new token'] = $server->json('POST', '/api/public/organization/import', $import([]),
+            ['Authorization' => 'Bearer '.$renewed->jsonString('access_token')]);
 
         return $steps;
     }
