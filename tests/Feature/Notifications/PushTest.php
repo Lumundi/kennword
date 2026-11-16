@@ -156,6 +156,21 @@ class PushTest extends TestCase
         $this->assertSame(['/identity/connect/token', '/push/delete'], array_column($this->recorded(), 'path'));
     }
 
+    public function test_the_token_is_cleared_without_a_login(): void
+    {
+        // As in Bitwarden: the clients clear it after dropping their own tokens. Whoever knows the device's
+        // identifier can do so as well, and the phone hears of nothing until it registers again.
+        $this->putJson("/api/devices/identifier/{$this->phone->uuid}/token", ['pushToken' => 'fcm-token'], $this->auth)->assertStatus(200);
+        $this->putJson("/api/devices/identifier/{$this->phone->uuid}/clear-token", [])->assertStatus(200);
+        $this->assertNull(Device::findByUuid($this->phone->uuid)?->push_token);
+        $this->postJson('/api/folders', ['name' => '2.folder'], $this->auth)->assertStatus(200);
+        $this->assertSame(['/identity/connect/token', '/push/register', '/push/delete'], array_column($this->recorded(), 'path'));
+
+        $this->putJson("/api/devices/identifier/{$this->phone->uuid}/token", ['pushToken' => 'fcm-token'], $this->auth)->assertStatus(200);
+        $this->postJson('/api/folders', ['name' => '2.other'], $this->auth)->assertStatus(200);
+        $this->assertSame(['/push/register', '/push/send'], array_slice(array_column($this->recorded(), 'path'), 3));
+    }
+
     public function test_a_relay_that_refuses_the_installation(): void
     {
         $this->changeVaultwardenEnvironment(['PUSH_INSTALLATION_KEY' => 'wrong']);

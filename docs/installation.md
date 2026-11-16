@@ -474,6 +474,10 @@ PUSH_INSTALLATION_KEY=...
 
 This needs no daemon: the web requests send the notifications themselves, once their response is out.
 
+`PUT /api/devices/identifier/<id>/clear-token` needs no login, as with Bitwarden's server and
+Vaultwarden, because the clients call it after they have dropped their tokens. Anyone who knows a
+device's identifier can therefore stop push notifications to that device until it logs in again.
+
 ## Backups
 
 Back up regularly, and before every update:
