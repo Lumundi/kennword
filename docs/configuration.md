@@ -94,6 +94,11 @@ The `config:` items in [PARITY.md](../PARITY.md) show the state of each setting 
   but the page and every icon tried also share that deadline. A PHP worker waits for the download, and a
   site that does not answer would otherwise hold it for minutes. A download that runs out of time is
   remembered like any failure (`ICON_CACHE_NEGTTL`).
+- **Icon download limit.** The icon route needs no login and every download holds a PHP worker, so one
+  address may start 60 downloads a minute (a burst of 60, then one more every second; a fixed limit, not a
+  setting). Icons that are cached and failures that are remembered cost nothing. Over the limit the route
+  answers with the fallback icon, which clients may not cache, and downloads nothing. Vaultwarden has no such
+  limit.
 - **Live notifications per account.** The daemon holds 800 connections in all; one account may hold 50,
   and past that its oldest connection makes way. Vaultwarden has no such limit.
 - **Waiting on purpose.** Where Vaultwarden waits a second so that unknown addresses cannot be told

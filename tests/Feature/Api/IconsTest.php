@@ -5,6 +5,7 @@ namespace Tests\Feature\Api;
 use App\Config\Config;
 use App\Icons\IconClient;
 use App\Support\BlockedHost;
+use App\Support\RateLimiter;
 use Tests\Attributes\Parity;
 use Tests\Fakes\IconClientFake;
 use Tests\TestCase;
@@ -205,5 +206,44 @@ class IconsTest extends TestCase
         $this->get('/icons/example.org/icon.png')->assertHeader('Content-Type', 'image/png')->assertHeader('Cache-Control', 'immutable, max-age=60, public');
         $this->assertSame([], $this->sites->requests);
         $this->assertFileDoesNotExist("{$this->cache}/example.org.png.miss");
+    }
+
+    /**
+     * Downloads hold a worker and the route needs no login: 60 a minute per address. What is cached,
+     * remembered as a failure or refused as a host costs nothing.
+     */
+    public function test_downloads_are_limited_per_address(): void
+    {
+        $fallback = file_get_contents(resource_path('vaultwarden/static/images/fallback-icon.png'));
+        $this->sites->answer('https://cached.example.com', '<link rel=icon href=/i.png>')->answer('https://cached.example.com/i.png', self::PNG.'cached');
+        $this->get('/icons/cached.example.com/icon.png')->assertStatus(200);
+
+        // The first download and these 58 leave one of the burst of 60, which a failing download takes; all in one go,
+        // so that no time passes to give one back.
+        $limiter = $this->app->make(RateLimiter::class);
+        for ($download = 1; $download < 59; $download++) {
+            $limiter->check('icons', '127.0.0.1');
+        }
+        $this->get('/icons/h1.example.com/icon.png')->assertStatus(200);
+        $this->assertFileExists("{$this->cache}/h1.example.com.png.miss");
+        $requests = count($this->sites->requests);
+
+        $limited = $this->get('/icons/over.example.com/icon.png')->assertStatus(200)->assertHeader('Content-Type', 'image/png');
+        $this->assertSame($fallback, $limited->getContent());
+        // The answer is not cached, for the address may try again soon, and nothing went out.
+        $this->assertStringContainsString('no-store', (string) $limited->headers->get('Cache-Control'));
+        $this->assertCount($requests, $this->sites->requests);
+        $this->assertFileDoesNotExist("{$this->cache}/over.example.com.png.miss");
+
+        // Icons that are cached, failures that are remembered and invalid hosts are still answered.
+        $this->assertSame(self::PNG.'cached', $this->get('/icons/cached.example.com/icon.png')->getContent());
+        $this->get('/icons/h1.example.com/icon.png')->assertHeader('Cache-Control', 'immutable, max-age=259200, public');
+        $this->get('/icons/dead_beaf.cafe/icon.png')->assertHeader('Cache-Control', 'immutable, max-age=259200, public');
+        $this->assertCount($requests, $this->sites->requests);
+
+        // Another address has its own allowance.
+        $this->get('/icons/over.example.com/icon.png', ['X-Real-IP' => '192.0.2.77'])->assertStatus(200);
+        $this->assertGreaterThan($requests, count($this->sites->requests));
+        $this->assertFileExists("{$this->cache}/over.example.com.png.miss");
     }
 }

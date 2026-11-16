@@ -9,6 +9,7 @@ use App\Support\EscapeDebug;
 use App\Support\HttpClient;
 use App\Support\HttpRequestFailed;
 use App\Support\HttpResponse;
+use Closure;
 use Illuminate\Support\Facades\Log;
 use Uri\WhatWg\Url;
 
@@ -26,10 +27,13 @@ final readonly class IconService
 
     /**
      * get_icon: the icon and its image type, or null for the fallback icon.
+     * $beforeDownload is called when the icon is not cached and a download
+     * is about to start; what it throws ends the lookup.
      *
+     * @param  (Closure(): void)|null  $beforeDownload
      * @return array{string, string}|null
      */
-    public function icon(string $domain): ?array
+    public function icon(string $domain, ?Closure $beforeDownload = null): ?array
     {
         $path = "{$domain}.png";
 
@@ -42,6 +46,10 @@ final readonly class IconService
         }
         if ($this->config->bool('disable_icon_download')) {
             return null;
+        }
+
+        if ($beforeDownload !== null) {
+            $beforeDownload();
         }
 
         $deadline = $this->deadline();

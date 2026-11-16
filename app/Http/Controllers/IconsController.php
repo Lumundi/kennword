@@ -2,13 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Auth\ClientIp;
 use App\Config\Config;
+use App\Http\ApiError;
 use App\Http\Cached;
 use App\Http\HttpStatus;
 use App\Http\Redirect;
 use App\Icons\IconService;
 use App\Support\EscapeDebug;
 use App\Support\HttpClient;
+use App\Support\RateLimiter;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
 
@@ -20,6 +24,7 @@ final readonly class IconsController
     public function __construct(
         private Config $config,
         private IconService $icons,
+        private RateLimiter $rateLimiter,
     ) {}
 
     /**
@@ -64,7 +69,7 @@ final readonly class IconsController
      * GET /icons/<host>/icon.png with the internal ICON_SERVICE: the icon of
      * the host, or the fallback icon, which is cached for ICON_CACHE_NEGTTL.
      */
-    public function iconInternal(string $host): Response
+    public function iconInternal(Request $request, string $host): Response
     {
         $valid = HttpClient::validHost($host);
         if ($valid === null) {
@@ -78,7 +83,15 @@ final readonly class IconsController
             return $this->fallback();
         }
 
-        $icon = $this->icons->icon($valid);
+        // Every download holds a worker, and the route needs no login: one address may start only so many.
+        // Cached icons and remembered failures are not counted. The fallback it gets instead is not cached.
+        try {
+            $icon = $this->icons->icon($valid, fn () => $this->rateLimiter->check('icons', ClientIp::resolve($request, $this->config)));
+        } catch (ApiError) {
+            Log::warning('Too many icon downloads from one address, answering with the fallback icon');
+
+            return $this->fallback(cached: false);
+        }
         if ($icon === null) {
             return $this->fallback();
         }
@@ -86,9 +99,12 @@ final readonly class IconsController
         return Cached::ttl(new Response($icon[0], 200, ['Content-Type' => "image/{$icon[1]}"]), $this->config->int('icon_cache_ttl'), immutable: true);
     }
 
-    private function fallback(): Response
+    private function fallback(bool $cached = true): Response
     {
         $icon = (string) file_get_contents(resource_path('vaultwarden/static/images/fallback-icon.png'));
+        if (! $cached) {
+            return new Response($icon, 200, ['Content-Type' => 'image/png', 'Cache-Control' => 'no-store']);
+        }
 
         return Cached::ttl(new Response($icon, 200, ['Content-Type' => 'image/png']), $this->config->int('icon_cache_negttl'), immutable: true);
     }

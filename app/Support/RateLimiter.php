@@ -24,6 +24,9 @@ final readonly class RateLimiter
         'login' => ['login_ratelimit_seconds', 'login_ratelimit_max_burst', 'Too many login requests'],
         'admin' => ['admin_ratelimit_seconds', 'admin_ratelimit_max_burst', 'Too many admin requests'],
         'unauthenticated' => ['unauthenticated_ratelimit_seconds', 'unauthenticated_ratelimit_max_burst', 'Too many requests'],
+        // Not one of Vaultwarden's: icon downloads (cache misses of the unauthenticated icon route), a
+        // burst of 60 and one more every second, so 60 a minute. Fixed values, not settings.
+        'icons' => [1, 60, 'Too many icon downloads'],
     ];
 
     /**
@@ -39,15 +42,15 @@ final readonly class RateLimiter
     ) {}
 
     /**
-     * @param  'login'|'admin'|'unauthenticated'  $limit
+     * @param  'login'|'admin'|'unauthenticated'|'icons'  $limit
      *
      * @throws ApiError With status 429
      */
     public function check(string $limit, string $ip): void
     {
         [$secondsSetting, $burstSetting, $message] = self::LIMITS[$limit];
-        $interval = $this->config->int($secondsSetting) * 1_000_000;
-        $burst = $this->config->int($burstSetting);
+        $interval = (is_int($secondsSetting) ? $secondsSetting : $this->config->int($secondsSetting)) * 1_000_000;
+        $burst = is_int($burstSetting) ? $burstSetting : $this->config->int($burstSetting);
         $key = "vaultwarden:ratelimit:{$limit}:{$ip}";
 
         $store = $this->cache->getStore();
