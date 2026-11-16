@@ -15,7 +15,7 @@ use Throwable;
  * (the hubs of NotificationsController accept them); accepted connections
  * then receive what requests hand over through the channel. A ping every 15
  * seconds keeps them open, and they are dropped when nothing came back for
- * 30 seconds.
+ * 30 seconds, or when the access token they were opened with expires.
  */
 final class Server
 {
@@ -297,8 +297,13 @@ final class Server
     {
         $now = self::now();
         $next = PHP_FLOAT_MAX;
+        // Tokens expire in wall-clock time, the other timers run on the monotonic clock.
+        $clockOffset = $now - microtime(true);
         foreach ($this->clients as $client) {
             $next = min($next, $client->upgraded ? $client->nextPing : $client->openedAt + self::REQUEST_TIMEOUT);
+            if ($client->upgraded && $client->validUntil !== null) {
+                $next = min($next, $client->validUntil + 1 + $clockOffset);
+            }
         }
         foreach ($this->channelClients as [, , $trusted, $openedAt]) {
             if (! $trusted) {
@@ -326,11 +331,19 @@ final class Server
             unset($this->nonces[$nonce]);
         }
 
+        $time = time();
         foreach ($this->clients as $client) {
             if (! $client->upgraded) {
                 if ($now - $client->openedAt > self::REQUEST_TIMEOUT) {
                     $this->close($client);
                 }
+
+                continue;
+            }
+            // Kennword: the token the connection was opened with expired, so the client has to come back with a new one.
+            if ($client->validUntil !== null && $time > $client->validUntil) {
+                logger()->debug("The access token of the WS connection from {$client->ip} expired");
+                $this->close($client);
 
                 continue;
             }
@@ -505,6 +518,7 @@ final class Server
         $client->ip = $response->ip;
         $client->userId = $response->userId;
         $client->anonymousToken = $response->anonymousToken;
+        $client->validUntil = $response->validUntil;
         if ($client->userId !== null) {
             $own = $this->subscriptions->ofUser($client->userId);
             if (count($own) >= Subscriptions::MAX_CONNECTIONS_PER_USER) {

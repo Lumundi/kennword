@@ -41,6 +41,9 @@ final class WebSocketConnection
 
     public ?string $anonymousToken = null;
 
+    // The last second (UNIX time) in which the access token of the connection is valid.
+    public ?int $validUntil = null;
+
     // The client's address as the hub saw it (ClientIp).
     public string $ip = '';
 

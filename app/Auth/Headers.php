@@ -50,6 +50,21 @@ final readonly class Headers
             throw new Unauthorized('Invalid claim');
         }
 
+        [$device, $user] = self::account($request, $claims);
+
+        return new self($host, $device, $user, $ip);
+    }
+
+    /**
+     * The device and user of an access token, as long as its security stamp
+     * is current or the route is in the stamp exception.
+     *
+     * @return array{Device, User}
+     *
+     * @throws Unauthorized
+     */
+    public static function account(Request $request, LoginClaims $claims): array
+    {
         $device = self::find(static fn () => Device::findByUuidAndUser($claims->device, $claims->sub))
             ?? throw new Unauthorized('Invalid device id');
         $user = self::find(static fn () => User::findByUuid($claims->sub))
@@ -59,7 +74,7 @@ final readonly class Headers
             self::checkStampException($request, $user, $claims);
         }
 
-        return new self($host, $device, $user, $ip);
+        return [$device, $user];
     }
 
     /**

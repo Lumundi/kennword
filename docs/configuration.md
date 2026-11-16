@@ -138,6 +138,11 @@ The `config:` items in [PARITY.md](../PARITY.md) show the state of each setting 
     personal, so Vaultwarden never checks the organization's limit.
   - The download link of a file Send stops working when the Send is disabled, expires or is due for
     deletion. Vaultwarden keeps it valid for its two minutes.
+  - The live notifications hub (`/notifications/hub`) checks the access token like every other route
+    does: its device and account must exist and its security stamp must be current. A token whose
+    session ended with a logout, a password change or a deleted device or account opens no connection.
+    An open connection is closed once its token expires, and the clients connect again with a new one.
+    Vaultwarden checks the token's signature and expiry when the connection opens, and keeps it open.
 - **Development routes.** Vaultwarden's debug builds serve static files from the source tree at
   `/vw_static/`; release builds do not, and neither does Kennword.
 - **Caches.** Do not cache Laravel's configuration or routes (see

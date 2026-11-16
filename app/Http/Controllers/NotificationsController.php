@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Auth\ClientIp;
+use App\Auth\Headers;
 use App\Auth\Jwt;
 use App\Auth\JwtIssuer;
 use App\Auth\LoginClaims;
@@ -10,6 +11,7 @@ use App\Config\Config;
 use App\Http\ApiError;
 use App\Http\Data\Query;
 use App\Http\HttpStatus;
+use App\Http\Unauthorized;
 use App\Notifications\Subscriptions;
 use App\Notifications\WebSocketAccept;
 use Illuminate\Http\Request;
@@ -49,7 +51,17 @@ final class NotificationsController
             throw ApiError::message('Invalid token', 401);
         }
 
-        return new WebSocketAccept($acceptKey, $ip, userId: $claims->sub);
+        // Kennword checks the token like the Headers guard of every other route: its device and user
+        // exist and its security stamp is current. A token that ended with a logout, a password
+        // change or a deleted device or account opens no connection.
+        try {
+            Headers::account($request, $claims);
+        } catch (Unauthorized $refused) {
+            throw ApiError::message('Invalid token', 401, $refused->getMessage());
+        }
+
+        // The daemon closes the connection once the token would be refused, with the leeway of Jwt::decode().
+        return new WebSocketAccept($acceptKey, $ip, userId: $claims->sub, validUntil: $claims->exp + Jwt::LEEWAY);
     }
 
     /**

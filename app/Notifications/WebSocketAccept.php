@@ -11,11 +11,16 @@ use Symfony\Component\HttpFoundation\Response;
  */
 final class WebSocketAccept extends Response
 {
+    /**
+     * @param  int|null  $validUntil  The last second (UNIX time) in which the access token is valid;
+     *                                the daemon closes the connection after it
+     */
     public function __construct(
         string $acceptKey,
         public readonly string $ip,
         public readonly ?string $userId = null,
         public readonly ?string $anonymousToken = null,
+        public readonly ?int $validUntil = null,
     ) {
         parent::__construct('', 101, [
             'Sec-Websocket-Version' => '13',

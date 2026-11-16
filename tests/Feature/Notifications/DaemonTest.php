@@ -49,13 +49,18 @@ class DaemonTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        // A database file, which the daemon reads too: the hub looks up the token's account.
+        $database = "{$this->dataFolder}/db.sqlite3";
+        touch($database);
+        config(['database.connections.sqlite.database' => $database]);
         $this->useDatabase('sqlite');
         $socket = "unix://{$this->dataFolder}/n.sock";
         config(['vaultwarden.notifications_socket' => $socket]);
 
         $process = proc_open([PHP_BINARY, base_path('artisan'), 'kennword:notifications', '--listen=127.0.0.1:0', '--no-ansi'],
             [1 => ['pipe', 'w'], 2 => ['file', "{$this->dataFolder}/daemon.log", 'w']], $pipes, base_path(),
-            [...getenv(), 'DATA_FOLDER' => $this->dataFolder, 'NOTIFICATIONS_SOCKET' => $socket, 'LOG_LEVEL' => 'debug']);
+            [...getenv(), 'DATA_FOLDER' => $this->dataFolder, 'NOTIFICATIONS_SOCKET' => $socket, 'LOG_LEVEL' => 'debug',
+                'DB_CONNECTION' => 'sqlite', 'DB_DATABASE' => $database]);
         if ($process === false) {
             throw new RuntimeException('Cannot start the notifications daemon.');
         }
@@ -105,9 +110,11 @@ class DaemonTest extends TestCase
         $this->assertSame(101, $byHeader->status);
         $other = User::new('other@example.com');
         $other->save();
+        $otherDevice = Device::new(Random::uuid(), $other->uuid, 'cli', 25);
+        $otherDevice->save();
         $jwt = $this->app->make(Jwt::class);
         $otherHub = WebSocketClient::connect($this->url, '/notifications/hub?access_token='
-            .LoginClaims::default(Device::new(Random::uuid(), $other->uuid, 'cli', 25), $other, AuthMethod::Password, 'cli', $jwt)->token($jwt));
+            .LoginClaims::default($otherDevice, $other, AuthMethod::Password, 'cli', $jwt)->token($jwt));
         $this->assertSame(101, $otherHub->status);
 
         $id = $this->postJson('/api/folders', ['name' => '2.folder'], ['Authorization' => "Bearer {$this->token}"])->assertStatus(200)->json('id');
@@ -172,6 +179,62 @@ class DaemonTest extends TestCase
 
         $this->assertSame(404, WebSocketClient::connect($this->url, '/notifications/anonymous-hub')->status);
         $this->assertSame(404, WebSocketClient::connect($this->url, '/api/sync')->status);
+    }
+
+    /**
+     * Kennword checks the token like the Headers guard does: a token whose
+     * session ended opens no connection, even before it expires.
+     */
+    public function test_tokens_of_ended_sessions_are_refused(): void
+    {
+        $jwt = $this->app->make(Jwt::class);
+        $refused = function (string $token): void {
+            $hub = WebSocketClient::connect($this->url, "/notifications/hub?access_token={$token}");
+            $this->assertSame(401, $hub->status);
+            $this->assertSame('Invalid token', $this->arrayOf(json_decode($hub->body, true))['message'] ?? null);
+        };
+
+        // A new security stamp, as after a password change or "Log out all sessions".
+        $this->user->resetSecurityStamp();
+        $this->user->save();
+        $refused($this->token);
+        $fresh = LoginClaims::default($this->device, $this->user, AuthMethod::Password, 'cli', $jwt)->token($jwt);
+        $this->assertSame(101, WebSocketClient::connect($this->url, "/notifications/hub?access_token={$fresh}")->status);
+
+        // A device that is gone, and one that never existed.
+        Device::deleteAllByUser($this->user->uuid);
+        $refused($fresh);
+        $refused(LoginClaims::default(Device::new(Random::uuid(), $this->user->uuid, 'cli', 25), $this->user, AuthMethod::Password, 'cli', $jwt)->token($jwt));
+
+        // A deleted account.
+        $gone = User::new('gone@example.com');
+        $gone->save();
+        $goneDevice = Device::new(Random::uuid(), $gone->uuid, 'cli', 25);
+        $goneDevice->save();
+        $goneToken = LoginClaims::default($goneDevice, $gone, AuthMethod::Password, 'cli', $jwt)->token($jwt);
+        $this->assertSame(101, WebSocketClient::connect($this->url, "/notifications/hub?access_token={$goneToken}")->status);
+        $gone->deleteUser();
+        $refused($goneToken);
+    }
+
+    /**
+     * Kennword closes a connection once its token would be refused: at its
+     * expiry, with the leeway of the token check.
+     */
+    public function test_a_connection_ends_when_its_token_expires(): void
+    {
+        $jwt = $this->app->make(Jwt::class);
+        $now = time();
+        // Past its expiry, but within the leeway for one more second.
+        $expiring = LoginClaims::new($this->device, $this->user, $now - 3600, $now - Jwt::LEEWAY + 1, ['api'], 'cli', $jwt)->token($jwt);
+
+        $hub = WebSocketClient::connect($this->url, "/notifications/hub?access_token={$expiring}");
+        $this->assertSame(101, $hub->status);
+        $valid = WebSocketClient::connect($this->url, "/notifications/hub?access_token={$this->token}");
+        $this->assertSame(101, $valid->status);
+
+        $this->assertTrue($hub->closedWithin(4.0));
+        $this->assertFalse($valid->closedWithin(0.3));
     }
 
     #[Parity('route:GET /notifications/anonymous-hub')]

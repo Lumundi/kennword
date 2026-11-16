@@ -385,8 +385,9 @@ reachable from the internet; it refuses `0.0.0.0`, `[::]` and public addresses.
 Without the daemon, or with `ENABLE_WEBSOCKET=false` (the daemon then refuses to start), Kennword
 behaves like Vaultwarden with WebSockets turned off: the clients see changes at their next sync.
 
-Run it as a service, as the user PHP runs as (so that it can read the RSA key and the web requests can
-reach its socket, which is open to the daemon's user and group only), for example with systemd:
+Run it as a service, as the user PHP runs as (so that it can read the RSA key and the database, in which
+it looks up the account and device of each client that connects, and the web requests can reach its
+socket, which is open to the daemon's user and group only), for example with systemd:
 
 ```ini
 [Unit]
