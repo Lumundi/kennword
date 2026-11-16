@@ -10,7 +10,9 @@ use Symfony\Component\HttpFoundation\Response;
 /**
  * Vaultwarden's CORS handling (util::Cors): only its own origin and the
  * clients' file origins are allowed, and every OPTIONS request is answered
- * as a successful preflight.
+ * as a successful preflight. Unlike Vaultwarden, every response says that
+ * it depends on the Origin header, so that caches keep the answers for
+ * different origins apart.
  */
 final readonly class Cors
 {
@@ -24,6 +26,7 @@ final readonly class Cors
     public function handle(Request $request, Closure $next): Response
     {
         $response = $next($request);
+        $response->setVary('Origin', replace: false);
 
         $origin = $this->allowedOrigin((string) $request->headers->get('Origin'));
         if ($origin !== null) {

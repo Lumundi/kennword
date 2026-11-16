@@ -866,11 +866,14 @@ final readonly class AdminController
     }
 
     /**
-     * The Secure guard: whether the request came in over HTTPS.
+     * Whether the session cookie is marked Secure: as Vaultwarden's Secure guard
+     * says, when the request came in over HTTPS, and whenever DOMAIN is an
+     * HTTPS address. A proxy that does not send X-Forwarded-Proto would
+     * otherwise leave the cookie of an HTTPS installation without the flag.
      */
     private function isSecure(Request $request): bool
     {
-        return Secure::https($request);
+        return Secure::https($request) || str_starts_with($this->config->string('domain'), 'https://');
     }
 
     /**

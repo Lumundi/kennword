@@ -60,6 +60,16 @@ class ResponseHeadersTest extends TestCase
             ->assertHeaderMissing('Access-Control-Allow-Origin');
     }
 
+    public function test_every_response_varies_by_origin(): void
+    {
+        // Unlike Vaultwarden: caches must not hand the answer for one origin to another.
+        $this->get('/api/now', ['Origin' => 'https://vault.example.com'])->assertHeader('Vary', 'Origin');
+        $this->get('/api/now', ['Origin' => 'https://evil.example.com'])->assertHeader('Vary', 'Origin');
+        $this->get('/api/now')->assertHeader('Vary', 'Origin');
+        $this->get('/api/no-such-thing')->assertStatus(404)->assertHeader('Vary', 'Origin');
+        $this->call('OPTIONS', '/api/accounts/profile', server: ['HTTP_ORIGIN' => 'https://vault.example.com'])->assertHeader('Vary', 'Origin');
+    }
+
     public function test_every_options_request_is_a_successful_preflight(): void
     {
         $response = $this->call('OPTIONS', '/api/accounts/profile', server: [

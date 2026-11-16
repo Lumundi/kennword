@@ -125,7 +125,7 @@ The `config:` items in [PARITY.md](../PARITY.md) show the state of each setting 
   (`newUserKeyId`), and drops the old one when the request names none, as the web vault's does, so that
   the clients record the new one. An account whose key Kennword rotated has no id or the new one,
   which Vaultwarden reads like any other.
-- **Stricter checks.** A few checks are stricter than Vaultwarden 1.37.5's:
+- **Stricter checks.** A few checks and headers are stricter than Vaultwarden 1.37.5's:
   - The share routes (`PUT /api/ciphers/{id}/share`, `PUT /api/ciphers/share`) only take the user's
     own ciphers, as Bitwarden's server and Vaultwarden's `main` since 5ad0c6d4 do. This comes with
     the next pin anyway.
@@ -170,6 +170,11 @@ The `config:` items in [PARITY.md](../PARITY.md) show the state of each setting 
     once." `IMPORT_ITEM_LIMIT`, `ORG_IMPORT_ITEM_LIMIT` and `BULK_ITEM_LIMIT`, settings of Kennword's,
     change the numbers of items (the assignments follow them, folders and collections stay at 2000);
     `0` lifts a limit. Vaultwarden and Bitwarden's self-hosted server have no such limits.
+  - The session cookie of the admin panel is marked `Secure` whenever `DOMAIN` is an `https://`
+    address, also behind a proxy that does not send `X-Forwarded-Proto: https`. Vaultwarden marks it
+    only when the request says it came over HTTPS (that header, or TLS of its own).
+  - Every response carries `Vary: Origin`: the CORS headers depend on the origin of the request, and
+    caches must not hand the answer for one origin to another.
 - **Development routes.** Vaultwarden's debug builds serve static files from the source tree at
   `/vw_static/`; release builds do not, and neither does Kennword.
 - **Caches.** Do not cache Laravel's configuration or routes (see

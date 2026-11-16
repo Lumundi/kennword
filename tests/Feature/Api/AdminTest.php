@@ -101,6 +101,22 @@ class AdminTest extends TestCase
         $this->assertSame([], $this->get('/admin/logout')->assertStatus(303)->headers->getCookies());
     }
 
+    public function test_the_session_cookie_is_secure_when_the_domain_is_https(): void
+    {
+        $this->useDatabase('sqlite');
+        $this->changeVaultwardenEnvironment(['DOMAIN' => 'https://vault.example.com', 'ADMIN_RATELIMIT_MAX_BURST' => '10']);
+
+        // Unlike Vaultwarden, also when the proxy does not say that the client came over HTTPS.
+        foreach ([[], ['X-Forwarded-Proto' => 'http'], ['X-Forwarded-Proto' => 'https']] as $headers) {
+            $cookie = $this->sessionCookie($this->form('/admin', ['token' => self::TOKEN], $headers)->assertStatus(200));
+            $this->assertTrue($cookie->isSecure());
+            $this->assertSame("VW_ADMIN={$cookie->getValue()}; HttpOnly; SameSite=Strict; Secure; Path=/admin; Max-Age=1200", (string) $cookie);
+        }
+
+        $this->changeVaultwardenEnvironment(['DOMAIN' => 'http://vault.example.com', 'ADMIN_RATELIMIT_MAX_BURST' => '10']);
+        $this->assertFalse($this->sessionCookie($this->form('/admin', ['token' => self::TOKEN], ['X-Forwarded-Proto' => 'http'])->assertStatus(200))->isSecure());
+    }
+
     #[Parity('config:ADMIN_TOKEN')]
     #[Parity('config:ADMIN_RATELIMIT_*')]
     public function test_argon2_tokens_and_the_rate_limit(): void
