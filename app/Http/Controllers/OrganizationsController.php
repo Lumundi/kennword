@@ -46,6 +46,7 @@ use App\Notifications\Notify;
 use App\Support\CheckedInt;
 use App\Support\Dates;
 use App\Support\EscapeDebug;
+use App\Support\ItemLimits;
 use App\Support\JsonValue;
 use App\Support\UpdateType;
 use App\Support\Uuid;
@@ -1078,6 +1079,10 @@ final readonly class OrganizationsController
             static fn (Fields $relation): array => [$relation->unsigned('key'), $relation->unsigned('value')],
             $body->objectList('collectionRelationships'),
         );
+        // Upstream reads no folders here, Bitwarden counts them too.
+        $count = static fn (mixed $list): int => is_array($list) ? count($list) : 0;
+        ItemLimits::checkOrganizationImport(count($ciphers), count($collections), count($relations),
+            $count($body->value('folders')), $count($body->value('folderRelationships')));
 
         if ($orgId !== $headers->membership->org_uuid) {
             throw ApiError::message('Organization not found', logMessage: "Organization id's do not match");

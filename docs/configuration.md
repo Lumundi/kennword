@@ -125,7 +125,7 @@ The `config:` items in [PARITY.md](../PARITY.md) show the state of each setting 
   (`newUserKeyId`), and drops the old one when the request names none, as the web vault's does, so that
   the clients record the new one. An account whose key Kennword rotated has no id or the new one,
   which Vaultwarden reads like any other.
-- **Stricter access checks.** A few checks are stricter than Vaultwarden 1.37.5's:
+- **Stricter checks.** A few checks are stricter than Vaultwarden 1.37.5's:
   - The share routes (`PUT /api/ciphers/{id}/share`, `PUT /api/ciphers/share`) only take the user's
     own ciphers, as Bitwarden's server and Vaultwarden's `main` since 5ad0c6d4 do. This comes with
     the next pin anyway.
@@ -162,6 +162,14 @@ The `config:` items in [PARITY.md](../PARITY.md) show the state of each setting 
     like the rate limits. Someone who knows an address can hold its account back this way for as
     long as they keep failing; the limits per address still apply to them. Vaultwarden limits per
     address only.
+  - An import or bulk action carries at most as many items as Bitwarden's servers take: a personal
+    import 7000 items, as many folder assignments and 2000 folders; an organization import 40000
+    items, twice as many collection and folder assignments and 2000 collections and folders; a bulk
+    delete, restore, move, share, archive or unarchive 500 items, as many as the web vault selects.
+    Larger requests are refused with Bitwarden's messages, such as "You cannot import this much data at
+    once." `IMPORT_ITEM_LIMIT`, `ORG_IMPORT_ITEM_LIMIT` and `BULK_ITEM_LIMIT`, settings of Kennword's,
+    change the numbers of items (the assignments follow them, folders and collections stay at 2000);
+    `0` lifts a limit. Vaultwarden and Bitwarden's self-hosted server have no such limits.
 - **Development routes.** Vaultwarden's debug builds serve static files from the source tree at
   `/vw_static/`; release builds do not, and neither does Kennword.
 - **Caches.** Do not cache Laravel's configuration or routes (see

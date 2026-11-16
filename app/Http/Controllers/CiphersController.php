@@ -37,6 +37,7 @@ use App\Notifications\Notify;
 use App\Support\CheckedInt;
 use App\Support\Dates;
 use App\Support\EscapeDebug;
+use App\Support\ItemLimits;
 use App\Support\UpdateType;
 use App\Support\Uuid;
 use DateTimeImmutable;
@@ -214,6 +215,7 @@ final readonly class CiphersController
             $body->objectList('folderRelationships'),
         );
 
+        ItemLimits::checkImport(count($ciphers), count($folders), count($relations));
         $this->enforcePersonalOwnershipPolicy(null, $headers);
         $this->validateCipherData($ciphers);
 
@@ -297,6 +299,8 @@ final readonly class CiphersController
             $cipher->id ?? throw ApiError::message('Request missing ids field');
             $cipher->organizationId ?? throw ApiError::message('Cipher OrganizationId is required.');
         }
+        // Bitwarden's PutShareMany has no limit; its web vault selects at most 500 items.
+        ItemLimits::checkBulk(count($ciphers), 'share');
         // Vaultwarden 5ad0c6d4, after the pin: only the user's own ciphers, all checked before anything is written.
         $owned = Cipher::findOwnedByUser($headers->user->uuid)->pluck('uuid')->all();
         foreach ($ciphers as $cipher) {
@@ -589,7 +593,7 @@ final readonly class CiphersController
      */
     public function softDeleteCiphers(Headers $headers, Request $request): EmptyResponse
     {
-        foreach (self::cipherIds($request) as $cipherId) {
+        foreach (self::cipherIds($request, 'delete') as $cipherId) {
             $this->deleteCipherByUuid($cipherId, $headers, soft: true, multi: true);
         }
 
@@ -605,7 +609,7 @@ final readonly class CiphersController
      */
     public function deleteCiphers(Headers $headers, Request $request): EmptyResponse
     {
-        foreach (self::cipherIds($request) as $cipherId) {
+        foreach (self::cipherIds($request, 'delete', ' Consider using the "Purge Vault" option instead.') as $cipherId) {
             $this->deleteCipherByUuid($cipherId, $headers, soft: false, multi: true);
         }
 
@@ -629,7 +633,7 @@ final readonly class CiphersController
     public function restoreCiphers(Headers $headers, Request $request): Response
     {
         $ciphers = [];
-        foreach (self::cipherIds($request) as $cipherId) {
+        foreach (self::cipherIds($request, 'restore') as $cipherId) {
             $ciphers[] = $this->restoreCipherByUuid($cipherId, $headers, multi: true);
         }
 
@@ -648,6 +652,7 @@ final readonly class CiphersController
         $folderId = $body->optionalNonEmptyString('folderId');
         $ids = $body->stringList('ids');
         $userUuid = $headers->user->uuid;
+        ItemLimits::checkBulk(count($ids), 'move');
 
         if ($folderId !== null && Folder::findByUuidAndUser($folderId, $userUuid) === null) {
             throw ApiError::message('Invalid folder', logMessage: 'Folder does not exist or belongs to another user');
@@ -1322,7 +1327,7 @@ final readonly class CiphersController
     private function archiveMultiple(Headers $headers, Request $request, bool $archive): Response
     {
         $ciphers = [];
-        foreach (self::cipherIds($request) as $cipherId) {
+        foreach (self::cipherIds($request, $archive ? 'archive' : 'unarchive') as $cipherId) {
             $ciphers[] = $this->archiveCipherByUuid($cipherId, $headers, $archive, multi: true);
         }
 
@@ -1353,14 +1358,20 @@ final readonly class CiphersController
 
     /**
      * CipherIdsData: a HashSet, so each id once. Upstream's order is random.
+     * Bitwarden counts the ids as sent against the limit of the action.
      *
+     * @param  string  $action  Named in the error when there are too many
      * @return list<string>
      *
+     * @throws ApiError
      * @throws HttpStatus
      */
-    private static function cipherIds(Request $request): array
+    private static function cipherIds(Request $request, string $action, string $advice = ''): array
     {
-        return array_values(array_unique(Body::json($request)->stringList('ids')));
+        $ids = Body::json($request)->stringList('ids');
+        ItemLimits::checkBulk(count($ids), $action, $advice);
+
+        return array_values(array_unique($ids));
     }
 
     /**

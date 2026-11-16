@@ -36,4 +36,22 @@ return [
 
     'notifications_socket' => env('NOTIFICATIONS_SOCKET'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Item limits
+    |--------------------------------------------------------------------------
+    |
+    | How many items one import or bulk action may carry (App\Support\ItemLimits):
+    | a personal import (7000 unless set), an organization import (40000) and
+    | a bulk delete, restore, move, share, archive or unarchive (500), as on
+    | Bitwarden's servers. 0 lifts a limit.
+    |
+    */
+
+    'item_limits' => [
+        'import' => env('IMPORT_ITEM_LIMIT'),
+        'org_import' => env('ORG_IMPORT_ITEM_LIMIT'),
+        'bulk' => env('BULK_ITEM_LIMIT'),
+    ],
+
 ];
