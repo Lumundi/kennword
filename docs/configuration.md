@@ -187,6 +187,10 @@ The `config:` items in [PARITY.md](../PARITY.md) show the state of each setting 
     reverse proxy in front that sets the header itself; in front of Kennword the web server is often the
     only one and passes the client's own header on to PHP. A proxy at another address that is not global
     (in the benchmarking range `198.18.0.0/15`, for example) must be listed.
+  - Mail takes lettre 0.11.24's checks of what the SMTP server sends, as Vaultwarden's `main` does since
+    4a0acc33: with `SMTP_SECURITY=starttls`, a session ends with `Unexpected data after the STARTTLS
+    reply.` when anything follows the reply to `STARTTLS` before the TLS handshake, and one reply may
+    take 100,000 bytes. Vaultwarden 1.37.5 uses lettre 0.11.23. This comes with the next pin anyway.
 - **Development routes.** Vaultwarden's debug builds serve static files from the source tree at
   `/vw_static/`; release builds do not, and neither does Kennword.
 - **Caches.** Do not cache Laravel's configuration or routes (see

@@ -13,10 +13,19 @@ use Symfony\Component\Mailer\Transport\Smtp\Stream\AbstractStream;
  * connect, handshake, read and write here stops at the deadline, and no wait
  * outlasts the idle timeout either.
  *
- * It offers what EsmtpTransport asks of its stream.
+ * It offers what EsmtpTransport asks of its stream, with lettre's checks of
+ * what the server sends: a reply may not grow without bound, and nothing may
+ * follow the reply to STARTTLS before the handshake.
  */
 final class DeadlineStream extends AbstractStream
 {
+    /**
+     * The most one reply may take, its lines together (lettre's
+     * MAX_RESPONSE_BYTES). A line has no limit of its own: some servers,
+     * Microsoft 365 among them, send longer ones than RFC 5321 allows.
+     */
+    private const int MAX_RESPONSE_BYTES = 100_000;
+
     private string $host = 'localhost';
 
     private int $port = 25;
@@ -29,6 +38,11 @@ final class DeadlineStream extends AbstractStream
     private array $streamContextOptions = [];
 
     private string $buffer = '';
+
+    /**
+     * Bytes of the current reply read so far, since the last command.
+     */
+    private int $replyBytes = 0;
 
     private string $debugTrail = '';
 
@@ -114,6 +128,7 @@ final class DeadlineStream extends AbstractStream
         stream_set_blocking($stream, false);
         $this->stream = $this->in = $this->out = $stream;
         $this->buffer = '';
+        $this->replyBytes = 0;
 
         // Implicit TLS (SMTP_SECURITY=force_tls)
         if ($this->tls && ! $this->startTLS()) {
@@ -126,6 +141,16 @@ final class DeadlineStream extends AbstractStream
         $stream = $this->stream;
         if ($stream === null) {
             return false;
+        }
+
+        // Nothing may follow the reply to STARTTLS before the handshake (lettre b404122f, like Postfix's
+        // CVE-2011-0411). What is buffered came in plaintext and would be read afterwards as if it had
+        // come over TLS, so whoever sits in between could answer EHLO, AUTH, MAIL, RCPT and DATA.
+        // Give up on the connection without sending anything else in the clear.
+        if ($this->buffer !== '' || stream_get_meta_data($stream)['unread_bytes'] > 0) {
+            $this->terminate();
+
+            throw new TransportException('Unexpected data after the STARTTLS reply.');
         }
 
         set_error_handler(static function (int $type, string $message): never {
@@ -152,6 +177,8 @@ final class DeadlineStream extends AbstractStream
         if ($debug) {
             $this->logSent($bytes);
         }
+        // What the server sends next answers this.
+        $this->replyBytes = 0;
 
         while ($bytes !== '') {
             $written = @fwrite($stream, $bytes);
@@ -180,7 +207,13 @@ final class DeadlineStream extends AbstractStream
         }
 
         while (($end = strpos($this->buffer, "\n")) === false) {
-            $chunk = @fread($stream, 8192);
+            // A server that never ends its line or reply may not fill the memory until the deadline
+            // (lettre 075849fb).
+            $room = self::MAX_RESPONSE_BYTES - $this->replyBytes - strlen($this->buffer);
+            if ($room <= 0) {
+                throw new TransportException(sprintf('The reply of "%s" is too large.', $this->getReadConnectionDescription()));
+            }
+            $chunk = @fread($stream, min(8192, $room));
             if ($chunk === false || ($chunk === '' && feof($stream))) {
                 throw new TransportException(sprintf('Connection to "%s" has been closed unexpectedly.', $this->getReadConnectionDescription()));
             }
@@ -194,6 +227,7 @@ final class DeadlineStream extends AbstractStream
 
         $line = substr($this->buffer, 0, $end + 1);
         $this->buffer = substr($this->buffer, $end + 1);
+        $this->replyBytes += strlen($line);
         $this->logReceived($line);
 
         return $line;
