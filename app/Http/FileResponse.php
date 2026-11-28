@@ -12,15 +12,47 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 final class FileResponse extends StreamedResponse
 {
+    /**
+     * Bytes read and sent at a time.
+     */
+    public const int CHUNK_SIZE = 1024 * 1024;
+
     public function __construct(string $path, private readonly ?string $contentType = null)
     {
         parent::__construct(static function () use ($path): void {
             $handle = fopen($path, 'rb');
-            if ($handle !== false) {
-                fpassthru($handle);
+            if ($handle === false) {
+                return;
+            }
+            try {
+                self::pass($handle);
+            } finally {
                 fclose($handle);
             }
         }, 200, ['Content-Length' => (string) filesize($path)]);
+    }
+
+    /**
+     * Sends the file chunk by chunk. fpassthru() hands the whole file to PHP's
+     * output layer at once, and an output buffer (output_buffering, on in
+     * php.ini-production) then holds all of it, so a file larger than
+     * memory_limit could not be downloaded.
+     *
+     * @param  resource  $handle
+     */
+    private static function pass($handle): void
+    {
+        while (! feof($handle)) {
+            $chunk = fread($handle, self::CHUNK_SIZE);
+            if ($chunk === false || $chunk === '') {
+                return;
+            }
+            echo $chunk;
+            if (ob_get_level() > 0) {
+                ob_flush();
+            }
+            flush();
+        }
     }
 
     public function prepare(Request $request): static
