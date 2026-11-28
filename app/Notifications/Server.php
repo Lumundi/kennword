@@ -500,11 +500,17 @@ final class Server
             $this->subscriptions->release($response->ip);
         }
 
-        ob_start();
+        // Collected by a callback, so that a response which flushes its chunks (FileResponse) is captured whole.
+        $content = '';
+        ob_start(static function (string $buffer) use (&$content): string {
+            $content .= $buffer;
+
+            return '';
+        });
         try {
             $response->sendContent();
         } finally {
-            $content = (string) ob_get_clean();
+            ob_end_clean();
         }
         $client->output .= self::responseHead($response, strlen($content)).($method === 'HEAD' ? '' : $content);
         $client->closeAfterOutput = true;
