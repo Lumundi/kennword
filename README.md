@@ -83,7 +83,7 @@ pinned Vaultwarden version and whether it is ported. In short:
 
 **What is open**
 
-- No independent audit. It is the condition for version 1.0; when it happens has not been decided yet.
+- No independent audit.
 - Kennword is young (its first release was in October 2026), and its code was written with an AI coding
   assistant. The internal reviews were made with one too, and each of them found vulnerabilities, so more
   may remain.
@@ -101,7 +101,7 @@ pinned Vaultwarden version and whether it is ported. In short:
   [security advisories](https://github.com/Lumundi/kennword/security/advisories): only the latest release
   gets fixes.
 
-If your rules ask for an independently audited server, Kennword does not meet them yet.
+If your rules ask for an independently audited server, Kennword does not meet them.
 
 ## Requirements
 
